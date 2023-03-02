@@ -16,8 +16,12 @@ type
     function Logger: IToolsApiLogger; overload;
     function Logger(const GroupName: string): IToolsApiLogger; overload;
 
+    function ProjectGroup: IOTAProjectGroup;
+
     function Project: IToolsApiProject; overload;
     function Project(const Project: IOTAProject): IToolsApiProject; overload;
+
+    function ProjectContextMenu: IToolsApiProjectContextMenu;
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
 
@@ -158,7 +162,8 @@ implementation
 
 uses
   System.Classes,
-  DCCStrs;
+  DCCStrs,
+  GDK.ToolsAPI.ProjectManagerContextMenu;
 
 { TToolsApiHelper }
 
@@ -170,6 +175,31 @@ end;
 function TToolsApiHelper.Project(const Project: IOTAProject): IToolsApiProject;
 begin
   Result := TToolsApiProject.Create(Project);
+end;
+
+function TToolsApiHelper.ProjectContextMenu: IToolsApiProjectContextMenu;
+begin
+  Result := TToolsApiProjectContextMenu.Create;
+end;
+
+function TToolsApiHelper.ProjectGroup: IOTAProjectGroup;
+var
+  ModuleServices: IOTAModuleServices;
+  Module: IOTAModule;
+  ProjectGroup: IOTAProjectGroup;
+  i: Integer;
+Begin
+  ProjectGroup := nil;
+
+  ModuleServices := (BorlandIDEServices as IOTAModuleServices);
+  for i := 0 to ModuleServices.ModuleCount - 1 do
+  begin
+    Module := ModuleServices.Modules[i];
+    if (Module.QueryInterface(IOTAProjectGroup, ProjectGroup) = S_OK) Then
+      Break;
+  end;
+
+  Result := ProjectGroup;
 end;
 
 function TToolsApiHelper.Module: IToolsApiModule;

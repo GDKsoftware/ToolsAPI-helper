@@ -39,6 +39,7 @@ contains
   GDK.ToolsAPI.Notifiers.Base in 'GDK.ToolsAPI.Notifiers.Base.pas',
   GDK.ToolsApi.Notifiers.IDE in 'GDK.ToolsApi.Notifiers.IDE.pas',
   GDK.ToolsApi.Notifiers.ProjectStorage in 'GDK.ToolsApi.Notifiers.ProjectStorage.pas',
-  GDK.ToolsAPI.CustomMessage in 'GDK.ToolsAPI.CustomMessage.pas';
+  GDK.ToolsAPI.CustomMessage in 'GDK.ToolsAPI.CustomMessage.pas',
+  GDK.ToolsAPI.ProjectManagerContextMenu in 'GDK.ToolsAPI.ProjectManagerContextMenu.pas';
 
 end.

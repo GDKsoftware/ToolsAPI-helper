@@ -18,6 +18,8 @@ type
   IToolsApiEditWriter = interface;
   IToolsApiBuildConfigurations = interface;
   IToolsApiBuildConfiguration = interface;
+  IToolsApiProjectContextMenu = interface;
+  IToolsApiProjectContextMenuItem = interface;
 
   EToolsApiNoProjectFound = class(Exception);
   EToolsApiNoModuleFound = class(Exception);
@@ -31,8 +33,12 @@ type
     function Logger: IToolsApiLogger; overload;
     function Logger(const GroupName: string): IToolsApiLogger; overload;
 
+    function ProjectGroup: IOTAProjectGroup;
+
     function Project: IToolsApiProject; overload;
     function Project(const Project: IOTAProject): IToolsApiProject; overload;
+
+    function ProjectContextMenu: IToolsApiProjectContextMenu;
 
     function Module: IToolsApiModule; overload;
     function Module(const Module: IOTAModule): IToolsApiModule; overload;
@@ -134,6 +140,25 @@ type
     function Get: IOTABuildConfiguration;
 
     property SearchPaths: TArray<string> read GetSearchPaths write SetSearchPaths;
+  end;
+
+  IToolsApiProjectContextMenu = interface
+    ['{B8BBB29F-A521-4ED1-9443-8BFA3DEE6E29}']
+
+    procedure Remove(const NotifierIndex: Integer);
+  end;
+
+  IToolsApiProjectContextMenuItem = interface(IOTAProjectManagerMenu)
+    ['{32307ABE-6BFD-41D7-A47C-DEBC11F9B217}']
+    procedure SetOnPostExecute(const Value: TFunc<IOTAProject, Boolean>);
+    procedure SetOnExecute(const Value: TProc<IOTAProject>);
+    procedure SetOnPreExecute(const Value: TFunc<IOTAProject, Boolean>);
+
+    function NotifierIndex: Integer;
+
+    property OnPreExecute: TFunc<IOTAProject, Boolean> write SetOnPreExecute;
+    property OnExecute: TProc<IOTAProject> write SetOnExecute;
+    property OnPostExecute: TFunc<IOTAProject, Boolean> write SetOnPostExecute;
   end;
 
 implementation
