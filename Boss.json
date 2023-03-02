@@ -1,0 +1,10 @@
+
+{
+	"name": "ToolsAPI-helper",
+	"description": "GDK Software ToolsAPI helper library",
+	"version": "1.0.0",
+	"homepage": "www.gdksoftware.com",
+	"mainsrc": "/",
+	"projects": [],
+	"dependencies": {}
+}
