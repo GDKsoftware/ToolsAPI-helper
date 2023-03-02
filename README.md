@@ -9,6 +9,7 @@ With this library we will contribute to the Delphi community and make it more si
 [Project group and projects](#Projects)
 
 ## Logger
+### Simple messages
 With the Logger functionality you can add messages to the message tool window.
 
 ```Pascal
@@ -22,14 +23,14 @@ Logger.Log('This is an example logging');
 Logger.Log('This is a message for project: %s', [Project.Name]);
 
 ```
-
+### Custom message tab / group
 Or start the Logger with your own group name. This creates a separate tab in the message tool window with that name.
 
 ```Pascal
 var Helper: IToolsApiHelper := TToolsApiHelper.Create;
 var Logger := Helper.Logger('MyLogTab');
 ```
-
+### Custom messages
 Use the <mark>custom</mark> option to create message with different colors or referencing to a file. In that case double cliking the message will open the file.
 
 ```Pascal
@@ -70,6 +71,7 @@ var ActiveProject: IOTAProject := ProjectHelper.Get;
 var ProjectHelper := Helper.Project(OTAProject);
 ```
 
+#### Project options
 With the <mark>IToolsApiProject</mark> interface you have access to the project options and the build configurations.
 
 ```Pascal
@@ -82,6 +84,7 @@ var ProjectHelper := Helper.Project;
 var ProjectOptions: IOTAProjectOptionsConfigurations := Helper.ProjectConfigurations;
 ```
 
+#### Build configurations
 The build configurations are wrapped in <mark>IToolsApiBuildConfigurations</mark> and <mark>IToolsApiBuildConfiguration</mark>. With a specific build configuration interface it's easy to get and change the search paths for a project.
 
 ```Pascal
