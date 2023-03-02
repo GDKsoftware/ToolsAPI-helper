@@ -6,9 +6,9 @@ With this library we will contribute to the Delphi community and make it more si
 ## Content
 [Logging / Messages](#Logger)
 
-[Projects](#Projects)
+[Project group and projects](#Projects)
 
-### Logger
+## Logger
 With the Logger functionality you can add messages to the message tool window.
 
 ```Pascal
@@ -43,7 +43,7 @@ CustomMessage.SetFileReference(FilePath, LineNumber);
 CustomMessage.Add('[%s] Error on line %d', [FilePath, LineNumber]);
 ```
 
-## Projects
+## Project group and projects
 
 ### Project Group
 
