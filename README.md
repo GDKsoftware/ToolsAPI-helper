@@ -31,7 +31,7 @@ var Helper: IToolsApiHelper := TToolsApiHelper.Create;
 var Logger := Helper.Logger('MyLogTab');
 ```
 ### Custom messages
-Use the <mark>custom</mark> option to create message with different colors or referencing to a file. In that case double cliking the message will open the file.
+Use the **custom** option to create message with different colors or referencing to a file. In that case double cliking the message will open the file.
 
 ```Pascal
 var CustomMessage := Logger.Custom;
@@ -57,7 +57,7 @@ var ProjectGroup := Helper.ProjectGroup;
 
 ### Project
 
-For a project the <mark>IToolsApiProject</mark> interface is used. This interface groups a list of project related features.
+For a project the **IToolsApiProject** interface is used. This interface groups a list of project related features.
 This interface can be received in two ways: for the active project or for the given project
 
 ```Pascal
@@ -72,7 +72,7 @@ var ProjectHelper := Helper.Project(OTAProject);
 ```
 
 #### Project options
-With the <mark>IToolsApiProject</mark> interface you have access to the project options and the build configurations.
+With the **IToolsApiProject** interface you have access to the project options and the build configurations.
 
 ```Pascal
 var Helper: IToolsApiHelper := TToolsApiHelper.Create;
@@ -85,7 +85,7 @@ var ProjectOptions: IOTAProjectOptionsConfigurations := Helper.ProjectConfigurat
 ```
 
 #### Build configurations
-The build configurations are wrapped in <mark>IToolsApiBuildConfigurations</mark> and <mark>IToolsApiBuildConfiguration</mark>. With a specific build configuration interface it's easy to get and change the search paths for a project.
+The build configurations are wrapped in **IToolsApiBuildConfigurations** and **IToolsApiBuildConfiguration**. With a specific build configuration interface it's easy to get and change the search paths for a project.
 
 ```Pascal
 var Helper: IToolsApiHelper := TToolsApiHelper.Create;
