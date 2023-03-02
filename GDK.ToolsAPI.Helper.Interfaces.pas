@@ -4,7 +4,8 @@ interface
 
 uses
   ToolsAPI,
-  System.SysUtils;
+  System.SysUtils,
+  GDK.ToolsAPI.CustomMessage;
 
 type
   IToolsApiHelper = interface;
@@ -60,6 +61,8 @@ type
 
     procedure Log(const Text: string); overload;
     procedure Log(const Text: string; const Params: array of const); overload;
+
+    function Custom: TCustomMessage;
   end;
 
   IToolsApiProject = interface

@@ -5,7 +5,8 @@ interface
 uses
   ToolsAPI,
   GDK.ToolsAPI.Helper.Interfaces,
-  System.SysUtils;
+  System.SysUtils,
+  GDK.ToolsAPI.CustomMessage;
 
 type
   TToolsApiHelper = class(TInterfacedObject, IToolsApiHelper)
@@ -50,6 +51,8 @@ type
 
     procedure Log(const Text: string); overload;
     procedure Log(const Text: string; const Params: array of const); overload;
+
+    function Custom: TCustomMessage;
   end;
 
   TToolsApiProject = class(TInterfacedObject, IToolsApiProject)
@@ -569,6 +572,11 @@ begin
   FGroupName := GroupName;
   if not FGroupName.IsEmpty then
     FGroup := (BorlandIDEServices As IOTAMessageServices).AddMessageGroup(FGroupName);
+end;
+
+function TToolsApiLogger.Custom: TCustomMessage;
+begin
+  Result := TCustomMessage.Create(FGroup);
 end;
 
 function TToolsApiLogger.UsesCustomGroup: Boolean;
