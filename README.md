@@ -81,7 +81,7 @@ var Helper: IToolsApiHelper := TToolsApiHelper.Create;
 var ProjectHelper := Helper.Project;
 
 // Get the project options to figure out the platforms used, the active platform, etc.
-var ProjectOptions: IOTAProjectOptionsConfigurations := Helper.ProjectConfigurations;
+var ProjectOptions: IOTAProjectOptionsConfigurations := ProjectHelper.ProjectConfigurations;
 ```
 
 #### Build configurations
@@ -94,7 +94,7 @@ var Helper: IToolsApiHelper := TToolsApiHelper.Create;
 var ProjectHelper := Helper.Project;
 
 // Get the base build configuration
-var BaseBuildConfig: IToolsApiBuildConfiguration := Helper.BuildConfigurations.Base;
+var BaseBuildConfig: IToolsApiBuildConfiguration := ProjectHelper.BuildConfigurations.Base;
 
 // Get the search paths
 var SearchPaths: TArray<string> := BaseBuildConfig.SearchPaths;
