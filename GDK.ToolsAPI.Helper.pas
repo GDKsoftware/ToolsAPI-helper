@@ -366,7 +366,7 @@ begin
   Found := Editor(
                 function(Editor: IOTAEditor): Boolean
                 begin
-                  Result := (Editor.QueryInterface(IOTASourceEditor, Result) = S_OK);
+                  Result := Supports(Editor, IOTASourceEditor);
                 end);
 
   SourceEditor := Found as IOTASourceEditor;
@@ -380,7 +380,7 @@ begin
   Found := Editor(
                 function(Editor: IOTAEditor): Boolean
                 begin
-                  Result := (Editor.QueryInterface(IOTAFormEditor, Result) = S_OK);
+                  Result := Supports(Editor, IOTAFormEditor);
                 end);
 
   Result := Found as IOTAFormEditor;
