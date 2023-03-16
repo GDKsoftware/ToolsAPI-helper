@@ -107,6 +107,9 @@ type
     function Reader: IToolsApiEditReader;
     function Writer: IToolsApiEditWriter;
     function UndoableWriter: IToolsApiEditWriter;
+
+    procedure AddToInterfaceUses(const UnitName: string);
+    procedure AddToImplementationUses(const UnitName: string);
   end;
 
   IToolsApiEditReader = interface

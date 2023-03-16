@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{02D94AB9-78A4-41B8-BA19-29E7F600BCB4}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="GdkToolsApiHelper.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="UnitTesting\GdkToolsApiUnitTests.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="GdkToolsApiHelper">
+        <MSBuild Projects="GdkToolsApiHelper.dproj"/>
+    </Target>
+    <Target Name="GdkToolsApiHelper:Clean">
+        <MSBuild Projects="GdkToolsApiHelper.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GdkToolsApiHelper:Make">
+        <MSBuild Projects="GdkToolsApiHelper.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="GdkToolsApiUnitTests">
+        <MSBuild Projects="UnitTesting\GdkToolsApiUnitTests.dproj"/>
+    </Target>
+    <Target Name="GdkToolsApiUnitTests:Clean">
+        <MSBuild Projects="UnitTesting\GdkToolsApiUnitTests.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GdkToolsApiUnitTests:Make">
+        <MSBuild Projects="UnitTesting\GdkToolsApiUnitTests.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="GdkToolsApiHelper;GdkToolsApiUnitTests"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="GdkToolsApiHelper:Clean;GdkToolsApiUnitTests:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="GdkToolsApiHelper:Make;GdkToolsApiUnitTests:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

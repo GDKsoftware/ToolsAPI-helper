@@ -104,6 +104,7 @@ type
   TToolsApiSourceEditor = class(TInterfacedObject, IToolsApiSourceEditor)
   private
     FEditor: IOTASourceEditor;
+    procedure AddToUses(const UnitName: string; const AddToImplementation: Boolean);
   public
     constructor Create(const Editor: IOTASourceEditor);
 
@@ -111,6 +112,9 @@ type
     function Reader: IToolsApiEditReader;
     function Writer: IToolsApiEditWriter;
     function UndoableWriter: IToolsApiEditWriter;
+
+    procedure AddToInterfaceUses(const UnitName: string);
+    procedure AddToImplementationUses(const UnitName: string);
   end;
 
   TToolsApiEditReader = class(TInterfacedObject, IToolsApiEditReader)
@@ -163,7 +167,8 @@ implementation
 uses
   System.Classes,
   DCCStrs,
-  GDK.ToolsAPI.ProjectManagerContextMenu;
+  GDK.ToolsAPI.ProjectManagerContextMenu,
+  GDK.ToolsAPI.UsesManager;
 
 { TToolsApiHelper }
 
@@ -423,6 +428,38 @@ function TToolsApiSourceEditor.UndoableWriter: IToolsApiEditWriter;
 begin
   var Writer := FEditor.CreateUndoableWriter;
   Result := TToolsApiEditWriter.Create(Writer);
+end;
+
+procedure TToolsApiSourceEditor.AddToInterfaceUses(const UnitName: string);
+begin
+  AddToUses(UnitName, False);
+end;
+
+procedure TToolsApiSourceEditor.AddToImplementationUses(const UnitName: string);
+begin
+  AddToUses(UnitName, True);
+end;
+
+procedure TToolsApiSourceEditor.AddToUses(const UnitName: string; const AddToImplementation: Boolean);
+begin
+  var EditorContent := Self.Reader.Content;
+
+  TToolsApiUsesManager
+    .Use
+    .WithSource(EditorContent)
+    .FindPositionToAdd(UnitName, AddToImplementation,
+      procedure(const Position: Integer; const IsEmptyUses: Boolean)
+      begin
+        var UsesText := '';
+        if IsEmptyUses then
+          UsesText := sLineBreak +
+                       sLineBreak + 'uses' +
+                       sLineBreak + '  ' + UnitName + ';'
+        else
+          UsesText := ', ' + UnitName;
+
+        Self.Writer.InsertText(UsesText, Position);
+      end);
 end;
 
 { TToolsApiEditReader }
