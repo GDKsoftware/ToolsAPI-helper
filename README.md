@@ -8,6 +8,8 @@ With this library we will contribute to the Delphi community and make it more si
 
 [Project group and projects](#Projects)
 
+[Uses manager](#uses-manager)
+
 ## Logger
 ### Simple messages
 With the Logger functionality you can add messages to the message tool window.
@@ -103,7 +105,20 @@ var SearchPaths: TArray<string> := BaseBuildConfig.SearchPaths;
 SearchPaths := SearchPaths + [NewFilePath];
 BaseBuildConfig.SearchPaths := SearchPaths;
 ```
+## Uses manager
+The **TToolsApiUsesManager** class is located in `GDK.ToolsAPI.UsesManager.pas` and provides the following methods:
 
+- **`WithSource`**: sets the source code of the unit to be parsed
+
+- **`FindUses`**: searches the source code for the interface and implementation sections, as well as the uses clause, and returns the results as a `TUsesResult` record
+
+- **`FindWord`**: searches the source code for a given word and returns the first match as a `TMatch` object
+
+- **`FindPositionToAdd`**: searches the source code for the position where a new unit should be added to the uses clause, and calls a callback function with the position and a Boolean indicating whether the uses clause is currently empty
+
+The **TToolsApiUsesManager** class also defines some private methods for finding the positions of certain keywords in the source code.
+
+The **IToolsApiUsesManager** interface is used to define the public methods of the **TToolsApiUsesManager** class. The interface includes the same methods as the class.
 
 
 
