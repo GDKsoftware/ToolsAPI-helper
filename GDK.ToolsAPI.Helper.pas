@@ -44,7 +44,6 @@ type
   TToolsApiLogger = class(TInterfacedObject, IToolsApiLogger)
   private
     FGroupName: string;
-    FGroup: IOTAMessageGroup;
   public
     constructor Create(const GroupName: string);
 
@@ -635,15 +634,15 @@ end;
 constructor TToolsApiLogger.Create(const GroupName: string);
 begin
   inherited Create;
-
   FGroupName := GroupName;
-  if not FGroupName.IsEmpty then
-    FGroup := (BorlandIDEServices As IOTAMessageServices).AddMessageGroup(FGroupName);
 end;
 
 function TToolsApiLogger.Custom: TCustomMessage;
+var
+  CustomGroup: IOTAMessageGroup;
 begin
-  Result := TCustomMessage.Create(FGroup);
+  CustomGroup := GetGroup;
+  Result := TCustomMessage.Create(CustomGroup);
 end;
 
 function TToolsApiLogger.UsesCustomGroup: Boolean;
@@ -656,15 +655,18 @@ begin
   if not Self.UsesCustomGroup then
     raise EToolsApiNoCustomLogGroupUsed.Create('No custom logging group is used');
 
-  Result := FGroup;
+  Result := (BorlandIDEServices As IOTAMessageServices).AddMessageGroup(FGroupName);
 end;
 
 procedure TToolsApiLogger.Clear;
+var
+  CustomGroup: IOTAMessageGroup;
 begin
   if not Self.UsesCustomGroup then
     Exit;
 
-  (BorlandIDEServices As IOTAMessageServices).ClearMessageGroup(FGroup);
+  CustomGroup := (BorlandIDEServices As IOTAMessageServices).GetGroup(FGroupName);
+  (BorlandIDEServices As IOTAMessageServices).ClearMessageGroup(CustomGroup);
 end;
 
 procedure TToolsApiLogger.Log(const Text: string; const Params: array of const);
@@ -681,7 +683,7 @@ var
   CustomGroup: IOTAMessageGroup;
 begin
   if Self.UsesCustomGroup then
-    CustomGroup := FGroup
+    CustomGroup := GetGroup
   else
     CustomGroup := nil;
 
