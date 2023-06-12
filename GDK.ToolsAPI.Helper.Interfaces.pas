@@ -40,8 +40,10 @@ type
 
     function ProjectContextMenu: IToolsApiProjectContextMenu;
 
+    function ModuleCount: Integer;
     function Module: IToolsApiModule; overload;
     function Module(const Module: IOTAModule): IToolsApiModule; overload;
+    function Module(const Index: Integer): IToolsApiModule; overload;
 
     function SourceEditor: IToolsApiSourceEditor;
     function EditorReader: IToolsApiEditReader;
@@ -85,6 +87,8 @@ type
 
     function Get: IOTAModule;
     function FileCount: Integer;
+    function FileName: string;
+    procedure Refresh(const ForceRefresh: Boolean);
 
     function Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
     function SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean> = nil): IToolsApiSourceEditor;

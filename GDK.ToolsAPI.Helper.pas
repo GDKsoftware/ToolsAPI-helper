@@ -25,8 +25,10 @@ type
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
 
+    function ModuleCount: Integer;
     function Module: IToolsApiModule; overload;
     function Module(const Module: IOTAModule): IToolsApiModule; overload;
+    function Module(const Index: Integer): IToolsApiModule; overload;
 
     function SourceEditor: IToolsApiSourceEditor;
     function EditorReader: IToolsApiEditReader;
@@ -79,9 +81,12 @@ type
   public
     constructor Create; overload;
     constructor Create(const Module: IOTAModule); overload;
+    constructor Create(const Index: Integer); overload;
 
     function Get: IOTAModule;
     function FileCount: Integer;
+    function FileName: string;
+    procedure Refresh(const ForceRefresh: Boolean);
 
     function Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
     function SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean> = nil): IToolsApiSourceEditor;
@@ -216,6 +221,19 @@ begin
   Result := TToolsApiModule.Create(Module);
 end;
 
+function TToolsApiHelper.Module(const Index: Integer): IToolsApiModule;
+begin
+  Result := TToolsApiModule.Create(Index);
+end;
+
+function TToolsApiHelper.ModuleCount: Integer;
+var
+  ModuleServices: IOTAModuleServices;
+begin
+  ModuleServices := (BorlandIDEServices as IOTAModuleServices);
+  Result := ModuleServices.ModuleCount;
+end;
+
 function TToolsApiHelper.SourceEditor: IToolsApiSourceEditor;
 begin
   Result := Self.Module.SourceEditor;
@@ -331,6 +349,13 @@ begin
   Guard;
 end;
 
+constructor TToolsApiModule.Create(const Index: Integer);
+begin
+  inherited Create;
+  FModule := (BorlandIDEServices as IOTAModuleServices).Modules[Index];
+  Guard;
+end;
+
 function TToolsApiModule.Get: IOTAModule;
 begin
   Result := FModule;
@@ -339,6 +364,16 @@ end;
 function TToolsApiModule.FileCount: Integer;
 begin
   Result := FModule.GetModuleFileCount;
+end;
+
+function TToolsApiModule.FileName: string;
+begin
+  Result := FModule.FileName;
+end;
+
+procedure TToolsApiModule.Refresh(const ForceRefresh: Boolean);
+begin
+  FModule.Refresh(ForceRefresh);
 end;
 
 function TToolsApiModule.Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
