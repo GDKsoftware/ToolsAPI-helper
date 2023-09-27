@@ -3,7 +3,8 @@ unit GDK.ToolsAPI.UsesManager.Tests;
 interface
 
 uses
-  DUnitX.TestFramework;
+  DUnitX.TestFramework,
+  GDK.ToolsAPI.UsesBuilder;
 
 type
   [TestFixture]
@@ -37,6 +38,9 @@ type
     [TestCase('Add to interface', 'False,100,False')]
     [TestCase('Add to implementation', 'True,142,False')]
     procedure AddUnitToExistingBothUses(const AddToImplementation: Boolean; const ExpectedPosition: Integer; const ExpectEmptyUses: Boolean);
+
+    [Test]
+    procedure TestUsesBuilder;
   end;
 
 implementation
@@ -96,6 +100,81 @@ begin
   Assert.AreEqual(ExpectedPosition, PositionFound, 'Wrong position found' + ErrorInfo);
   Assert.AreEqual(ExpectEmptyUses, IsEmptyUsesFound, 'Uses empty or not' + ErrorInfo);
 
+end;
+
+procedure TGdkToolsApiUsesManagerTests.TestUsesBuilder;
+begin
+  var UsesBuilder: IToolsAPIUsesBuilder := TToolsAPIUsesBuilder.Create;
+  UsesBuilder.InImplementation;
+  var ExpectedPosition := 45;
+  var ExpectedText :=  sLineBreak +
+                       sLineBreak + 'uses' +
+                       sLineBreak + '  ' + MY_TEST_UNIT + ';';
+
+  var EmptySource := GetEmptyUnit;
+  UsesBuilder.WithSource(EmptySource);
+
+  var UnitNames: TArray<string> := [MY_TEST_UNIT];
+  var Actual := UsesBuilder.Build(UnitNames);
+
+  Assert.AreEqual(ExpectedPosition, Actual.Position, '1 - Position is not correct');
+  Assert.AreEqual(ExpectedText, Actual.Text, '1 - Text is not correct');
+
+  UnitNames := [MY_TEST_UNIT, 'System.SysUtils'];
+  ExpectedText := sLineBreak +
+                  sLineBreak + 'uses' +
+                  sLineBreak + '  ' + string.Join(',', UnitNames) + ';';
+
+  Actual := UsesBuilder.Build(UnitNames);
+
+  Assert.AreEqual(ExpectedPosition, Actual.Position, '2 - Position is not correct');
+  Assert.AreEqual(ExpectedText, Actual.Text, '2 - Text is not correct');
+
+  var SourceWithInterfaceUses := GetUnitWithInterfaceUses;
+  UsesBuilder.WithSource(SourceWithInterfaceUses);
+
+  ExpectedPosition := 91;
+
+  UnitNames := [MY_TEST_UNIT];
+  ExpectedText := sLineBreak +
+                  sLineBreak + 'uses' +
+                  sLineBreak + '  ' + string.Join(',', UnitNames) + ';';
+  Actual := UsesBuilder.Build(UnitNames);
+
+  Assert.AreEqual(ExpectedPosition, Actual.Position, '3 - Position is not correct');
+  Assert.AreEqual(ExpectedText, Actual.Text, '3 - Text is not correct');
+
+  UnitNames := [MY_TEST_UNIT];
+  ExpectedText := sLineBreak +
+                  sLineBreak + 'uses' +
+                  sLineBreak + '  ' + string.Join(',', UnitNames) + ';';
+
+  // System.SysUtils already used in interface uses
+  Actual := UsesBuilder.Build(UnitNames + ['System.SysUtils']);
+
+  Assert.AreEqual(ExpectedPosition, Actual.Position, '4 - Position is not correct');
+  Assert.AreEqual(ExpectedText, Actual.Text, '4 - Text is not correct');
+
+  var SourceWithImplementationUses := GetUnitWithImplementationUses;
+  UsesBuilder.WithSource(SourceWithImplementationUses);
+
+  ExpectedPosition := 108;
+
+  UnitNames := [MY_TEST_UNIT];
+  ExpectedText := ', ' + string.Join(',', UnitNames);
+  Actual := UsesBuilder.Build(UnitNames);
+
+  Assert.AreEqual(ExpectedPosition, Actual.Position, '5 - Position is not correct');
+  Assert.AreEqual(ExpectedText, Actual.Text, '5 - Text is not correct');
+
+  UnitNames := [MY_TEST_UNIT];
+  ExpectedText := ', ' + string.Join(',', UnitNames);
+
+  // System.SysUtils already used in implementation uses
+  Actual := UsesBuilder.Build(UnitNames + ['System.SysUtils']);
+
+  Assert.AreEqual(ExpectedPosition, Actual.Position, '6 - Position is not correct');
+  Assert.AreEqual(ExpectedText, Actual.Text, '6 - Text is not correct');
 end;
 
 function TGdkToolsApiUsesManagerTests.GetEmptyUnit: string;

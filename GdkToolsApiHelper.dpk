@@ -41,6 +41,7 @@ contains
   GDK.ToolsApi.Notifiers.ProjectStorage in 'GDK.ToolsApi.Notifiers.ProjectStorage.pas',
   GDK.ToolsAPI.CustomMessage in 'GDK.ToolsAPI.CustomMessage.pas',
   GDK.ToolsAPI.ProjectManagerContextMenu in 'GDK.ToolsAPI.ProjectManagerContextMenu.pas',
-  GDK.ToolsAPI.UsesManager in 'GDK.ToolsAPI.UsesManager.pas';
+  GDK.ToolsAPI.UsesManager in 'GDK.ToolsAPI.UsesManager.pas',
+  GDK.ToolsAPI.UsesBuilder in 'GDK.ToolsAPI.UsesBuilder.pas';
 
 end.

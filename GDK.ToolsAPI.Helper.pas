@@ -108,7 +108,7 @@ type
   TToolsApiSourceEditor = class(TInterfacedObject, IToolsApiSourceEditor)
   private
     FEditor: IOTASourceEditor;
-    procedure AddToUses(const UnitName: string; const AddToImplementation: Boolean);
+    procedure AddToUses(const UnitNames: TArray<string>; const AddToImplementation: Boolean);
   public
     constructor Create(const Editor: IOTASourceEditor);
 
@@ -117,8 +117,10 @@ type
     function Writer: IToolsApiEditWriter;
     function UndoableWriter: IToolsApiEditWriter;
 
-    procedure AddToInterfaceUses(const UnitName: string);
-    procedure AddToImplementationUses(const UnitName: string);
+    procedure AddToInterfaceUses(const UnitName: string); overload;
+    procedure AddToInterfaceUses(const UnitNames: TArray<string>); overload;
+    procedure AddToImplementationUses(const UnitName: string); overload;
+    procedure AddToImplementationUses(const UnitNames: TArray<string>); overload;
   end;
 
   TToolsApiEditReader = class(TInterfacedObject, IToolsApiEditReader)
@@ -172,7 +174,8 @@ uses
   System.Classes,
   DCCStrs,
   GDK.ToolsAPI.ProjectManagerContextMenu,
-  GDK.ToolsAPI.UsesManager;
+  GDK.ToolsAPI.UsesManager,
+  GDK.ToolsAPI.UsesBuilder;
 
 { TToolsApiHelper }
 
@@ -466,34 +469,41 @@ end;
 
 procedure TToolsApiSourceEditor.AddToInterfaceUses(const UnitName: string);
 begin
-  AddToUses(UnitName, False);
+  AddToUses([UnitName], False);
+end;
+
+procedure TToolsApiSourceEditor.AddToInterfaceUses(const UnitNames: TArray<string>);
+begin
+  AddToUses(UnitNames, False);
 end;
 
 procedure TToolsApiSourceEditor.AddToImplementationUses(const UnitName: string);
 begin
-  AddToUses(UnitName, True);
+  AddToUses([UnitName], True);
 end;
 
-procedure TToolsApiSourceEditor.AddToUses(const UnitName: string; const AddToImplementation: Boolean);
+procedure TToolsApiSourceEditor.AddToImplementationUses(const UnitNames: TArray<string>);
 begin
+  AddToUses(UnitNames, True);
+end;
+
+procedure TToolsApiSourceEditor.AddToUses(const UnitNames: TArray<string>; const AddToImplementation: Boolean);
+begin
+  var UsesBuilder := TToolsAPIUsesBuilder.Use;
+
+  if AddToImplementation then
+    UsesBuilder.InImplementation
+  else
+    UsesBuilder.InInterface;
+
   var EditorContent := Self.Reader.Content;
+  UsesBuilder.WithSource(EditorContent);
 
-  TToolsApiUsesManager
-    .Use
-    .WithSource(EditorContent)
-    .FindPositionToAdd(UnitName, AddToImplementation,
-      procedure(const Position: Integer; const IsEmptyUses: Boolean)
-      begin
-        var UsesText := '';
-        if IsEmptyUses then
-          UsesText := sLineBreak +
-                       sLineBreak + 'uses' +
-                       sLineBreak + '  ' + UnitName + ';'
-        else
-          UsesText := ', ' + UnitName;
-
-        Self.Writer.InsertText(UsesText, Position);
-      end);
+  var UsesToWrite := UsesBuilder.Build(UnitNames);
+  if (UsesToWrite.Position >= 0) and not UsesToWrite.Text.IsEmpty then
+  begin
+    Self.Writer.InsertText(UsesToWrite.Text, UsesToWrite.Position);
+  end;
 end;
 
 { TToolsApiEditReader }

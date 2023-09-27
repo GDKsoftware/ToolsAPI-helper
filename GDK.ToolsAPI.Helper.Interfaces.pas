@@ -112,8 +112,10 @@ type
     function Writer: IToolsApiEditWriter;
     function UndoableWriter: IToolsApiEditWriter;
 
-    procedure AddToInterfaceUses(const UnitName: string);
-    procedure AddToImplementationUses(const UnitName: string);
+    procedure AddToInterfaceUses(const UnitName: string); overload;
+    procedure AddToInterfaceUses(const UnitNames: TArray<string>); overload;
+    procedure AddToImplementationUses(const UnitName: string); overload;
+    procedure AddToImplementationUses(const UnitNames: TArray<string>); overload;
   end;
 
   IToolsApiEditReader = interface
