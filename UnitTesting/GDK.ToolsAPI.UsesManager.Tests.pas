@@ -103,6 +103,8 @@ begin
 end;
 
 procedure TGdkToolsApiUsesManagerTests.TestUsesBuilder;
+const
+  Uses_Separator = ', ';
 begin
   var UsesBuilder: IToolsAPIUsesBuilder := TToolsAPIUsesBuilder.Use;
   UsesBuilder.InImplementation;
@@ -123,7 +125,7 @@ begin
   UnitNames := [MY_TEST_UNIT, 'System.SysUtils'];
   ExpectedText := sLineBreak +
                   sLineBreak + 'uses' +
-                  sLineBreak + '  ' + string.Join(',', UnitNames) + ';';
+                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';';
 
   Actual := UsesBuilder.Build(UnitNames);
 
@@ -138,7 +140,7 @@ begin
   UnitNames := [MY_TEST_UNIT];
   ExpectedText := sLineBreak +
                   sLineBreak + 'uses' +
-                  sLineBreak + '  ' + string.Join(',', UnitNames) + ';';
+                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';';
   Actual := UsesBuilder.Build(UnitNames);
 
   Assert.AreEqual(ExpectedPosition, Actual.Position, '3 - Position is not correct');
@@ -147,7 +149,7 @@ begin
   UnitNames := [MY_TEST_UNIT];
   ExpectedText := sLineBreak +
                   sLineBreak + 'uses' +
-                  sLineBreak + '  ' + string.Join(',', UnitNames) + ';';
+                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';';
 
   // System.SysUtils already used in interface uses
   Actual := UsesBuilder.Build(UnitNames + ['System.SysUtils']);
@@ -161,14 +163,14 @@ begin
   ExpectedPosition := 108;
 
   UnitNames := [MY_TEST_UNIT];
-  ExpectedText := ', ' + string.Join(',', UnitNames);
+  ExpectedText := Uses_Separator + string.Join(Uses_Separator, UnitNames);
   Actual := UsesBuilder.Build(UnitNames);
 
   Assert.AreEqual(ExpectedPosition, Actual.Position, '5 - Position is not correct');
   Assert.AreEqual(ExpectedText, Actual.Text, '5 - Text is not correct');
 
   UnitNames := [MY_TEST_UNIT];
-  ExpectedText := ', ' + string.Join(',', UnitNames);
+  ExpectedText := Uses_Separator + string.Join(Uses_Separator, UnitNames);
 
   // System.SysUtils already used in implementation uses
   Actual := UsesBuilder.Build(UnitNames + ['System.SysUtils']);
