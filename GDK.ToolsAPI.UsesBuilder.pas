@@ -7,9 +7,18 @@ uses
   System.SysUtils;
 
 type
-  TUsesToWrite = record
-    Text: string;
-    Position: Integer;
+  IUsesToWriteResult = interface
+    ['{270998A3-D930-459D-8926-75C6673D28A5}']
+
+    {$REGION 'Getters and setters'}
+    function GetText: string;
+    procedure SetText(const Value: string);
+    function GetPosition: Integer;
+    procedure SetPosition(const Value: Integer);
+    {$ENDREGION}
+
+    property Text: string read GetText write SetText;
+    property Position: Integer read GetPosition write SetPosition;
   end;
 
   IToolsAPIUsesBuilder = interface
@@ -17,23 +26,53 @@ type
 
     function InInterface: IToolsAPIUsesBuilder;
     function InImplementation: IToolsAPIUsesBuilder;
-    function WithSource(const Content: string): IToolsAPIUsesBuilder;
+    function WithSource(const Source: string): IToolsAPIUsesBuilder;
 
-    function Build(const UnitNames: TArray<string>): TUsesToWrite;
+    function Build(const UnitNames: TArray<string>): IUsesToWriteResult;
   end;
 
   TToolsAPIUsesBuilder = class(TInterfacedObject, IToolsAPIUsesBuilder)
   private
+    FUsesManager: IToolsApiUsesManager;
+
     FInImplementation: Boolean;
-    FContent: string;
+
+    FUnitNamesToWrite: TArray<string>;
+    FPosition: Integer;
+    FIsEmptyUses: Boolean;
+
+    procedure DoFindPositionToAdd(const UnitName: string);
+    procedure HandleOnPositionFound(const Position: Integer; const IsEmptyUses: Boolean);
+    procedure AddUnitNameToWrite(const UnitName: string);
+
+    function ComposeUsesToWrite: IUsesToWriteResult;
+    procedure ResetFields;
   public
     class function Use: IToolsAPIUsesBuilder;
 
+    constructor Create(const UsesManager: IToolsApiUsesManager);
+
     function InInterface: IToolsAPIUsesBuilder;
     function InImplementation: IToolsAPIUsesBuilder;
-    function WithSource(const Content: string): IToolsAPIUsesBuilder;
+    function WithSource(const Source: string): IToolsAPIUsesBuilder;
 
-    function Build(const UnitNames: TArray<string>): TUsesToWrite;
+    function Build(const UnitNames: TArray<string>): IUsesToWriteResult;
+  end;
+
+  TUsesToWriteResult = class(TInterfacedObject, IUsesToWriteResult)
+  strict private
+    FPosition: Integer;
+    FText: string;
+  public
+    {$REGION 'Getters and setters'}
+    function GetText: string;
+    procedure SetText(const Value: string);
+    function GetPosition: Integer;
+    procedure SetPosition(const Value: Integer);
+    {$ENDREGION}
+
+    property Text: string read GetText write SetText;
+    property Position: Integer read GetPosition write SetPosition;
   end;
 
 implementation
@@ -42,7 +81,15 @@ implementation
 
 class function TToolsAPIUsesBuilder.Use: IToolsAPIUsesBuilder;
 begin
-  Result := TToolsAPIUsesBuilder.Create;
+  Result := TToolsAPIUsesBuilder.Create(TToolsApiUsesManager.Use);
+end;
+
+constructor TToolsAPIUsesBuilder.Create(const UsesManager: IToolsApiUsesManager);
+begin
+  inherited Create;
+
+  FUsesManager := UsesManager;
+  ResetFields;
 end;
 
 function TToolsAPIUsesBuilder.InImplementation: IToolsAPIUsesBuilder;
@@ -57,49 +104,92 @@ begin
   Result := Self;
 end;
 
-function TToolsAPIUsesBuilder.WithSource(const Content: string): IToolsAPIUsesBuilder;
+function TToolsAPIUsesBuilder.WithSource(const Source: string): IToolsAPIUsesBuilder;
 begin
-  FContent := Content;
+  FUsesManager.WithSource(Source);
   Result := Self;
 end;
 
-function TToolsAPIUsesBuilder.Build(const UnitNames: TArray<string>): TUsesToWrite;
+function TToolsAPIUsesBuilder.Build(const UnitNames: TArray<string>): IUsesToWriteResult;
 begin
-  var ActualPosition: Integer := -1;
-  var ActualIsEmptyUses: Boolean := False;
+  try
+    for var UnitName in UnitNames do
+      DoFindPositionToAdd(UnitName);
 
-  var UsesManager := TToolsApiUsesManager
-                      .Use
-                      .WithSource(FContent);
-
-  var UnitsToWrite: TArray<string> := [];
-
-  for var UnitName in UnitNames do
-  begin
-    UsesManager.FindPositionToAdd(UnitName, FInImplementation,
-      procedure(const Position: Integer; const IsEmptyUses: Boolean)
-      begin
-        ActualIsEmptyUses := ActualIsEmptyUses or IsEmptyUses;
-        ActualPosition := Position;
-
-        var CurLength := Length(UnitsToWrite);
-        SetLength(UnitsToWrite, CurLength + 1);
-        UnitsToWrite[CurLength] := UnitName;
-      end);
+    Result := ComposeUsesToWrite;
+  finally
+    ResetFields;
   end;
+end;
 
-  Result.Position := ActualPosition;
+procedure TToolsAPIUsesBuilder.DoFindPositionToAdd(const UnitName: string);
+begin
+  FUsesManager.FindPositionToAdd(UnitName, FInImplementation,
+    procedure(const Position: Integer; const IsEmptyUses: Boolean)
+    begin
+      HandleOnPositionFound(Position, IsEmptyUses);
+      AddUnitNameToWrite(UnitName);
+    end
+  );
+end;
 
-  if ActualIsEmptyUses then
+procedure TToolsAPIUsesBuilder.HandleOnPositionFound(const Position: Integer; const IsEmptyUses: Boolean);
+begin
+  FIsEmptyUses := FIsEmptyUses or IsEmptyUses;
+  FPosition := Position;
+end;
+
+procedure TToolsAPIUsesBuilder.AddUnitNameToWrite(const UnitName: string);
+begin
+  FUnitNamesToWrite := FUnitNamesToWrite + [UnitName];
+end;
+
+function TToolsAPIUsesBuilder.ComposeUsesToWrite: IUsesToWriteResult;
+begin
+  Result := TUsesToWriteResult.Create;
+  Result.Position := FPosition;
+
+  if FIsEmptyUses then
   begin
     Result.Text :=  sLineBreak +
                     sLineBreak + 'uses' +
-                    sLineBreak + '  ' + string.Join(',', UnitsToWrite) + ';'
+                    sLineBreak + '  ' + string.Join(',', FUnitNamesToWrite) + ';'
   end
   else
   begin
-    Result.Text := ', ' + string.Join(',', UnitsToWrite);
+    Result.Text := ', ' + string.Join(',', FUnitNamesToWrite);
   end;
 end;
+
+procedure TToolsAPIUsesBuilder.ResetFields;
+begin
+  FUnitNamesToWrite := [];
+  FIsEmptyUses := False;
+  FPosition := -1;
+end;
+
+{$REGION 'TUsesToWriteResult'}
+
+function TUsesToWriteResult.GetPosition: Integer;
+begin
+  Result := FPosition;
+end;
+
+function TUsesToWriteResult.GetText: string;
+begin
+  Result := FText;
+end;
+
+procedure TUsesToWriteResult.SetPosition(const Value: Integer);
+begin
+  FPosition := Value;
+end;
+
+procedure TUsesToWriteResult.SetText(const Value: string);
+begin
+  FText := Value;
+end;
+
+{$ENDREGION}
 
 end.

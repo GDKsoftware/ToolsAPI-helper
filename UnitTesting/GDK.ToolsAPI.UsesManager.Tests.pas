@@ -104,7 +104,7 @@ end;
 
 procedure TGdkToolsApiUsesManagerTests.TestUsesBuilder;
 begin
-  var UsesBuilder: IToolsAPIUsesBuilder := TToolsAPIUsesBuilder.Create;
+  var UsesBuilder: IToolsAPIUsesBuilder := TToolsAPIUsesBuilder.Use;
   UsesBuilder.InImplementation;
   var ExpectedPosition := 45;
   var ExpectedText :=  sLineBreak +
