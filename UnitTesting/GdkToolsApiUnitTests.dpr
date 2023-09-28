@@ -14,7 +14,8 @@ uses
   {$ENDIF }
   DUnitX.TestFramework,
   GDK.ToolsAPI.UsesManager.Tests in 'GDK.ToolsAPI.UsesManager.Tests.pas',
-  GDK.ToolsAPI.UsesManager in '..\GDK.ToolsAPI.UsesManager.pas';
+  GDK.ToolsAPI.UsesManager in '..\GDK.ToolsAPI.UsesManager.pas',
+  GDK.ToolsAPI.UsesBuilder in '..\GDK.ToolsAPI.UsesBuilder.pas';
 
 {$IFNDEF TESTINSIGHT}
 var
