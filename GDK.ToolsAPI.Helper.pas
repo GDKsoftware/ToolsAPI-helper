@@ -497,13 +497,13 @@ begin
     UsesBuilder.InInterface;
 
   var EditorContent := Self.Reader.Content;
-  UsesBuilder.WithSource(EditorContent);
 
-  var UsesToWrite := UsesBuilder.Build(UnitNames);
-  if (UsesToWrite.Position >= 0) and not UsesToWrite.Text.IsEmpty then
-  begin
-    Self.Writer.InsertText(UsesToWrite.Text, UsesToWrite.Position);
-  end;
+  var UsesToWrite := UsesBuilder
+                      .WithSource(EditorContent)
+                      .Build(UnitNames);
+
+  if UsesToWrite.CanWrite then
+    Self.UndoableWriter.InsertText(UsesToWrite.Text, UsesToWrite.Position);
 end;
 
 { TToolsApiEditReader }

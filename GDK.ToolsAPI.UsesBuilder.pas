@@ -17,6 +17,8 @@ type
     procedure SetPosition(const Value: Integer);
     {$ENDREGION}
 
+    function CanWrite: Boolean;
+
     property Text: string read GetText write SetText;
     property Position: Integer read GetPosition write SetPosition;
   end;
@@ -32,6 +34,8 @@ type
   end;
 
   TToolsAPIUsesBuilder = class(TInterfacedObject, IToolsAPIUsesBuilder)
+  const
+    UnitNames_Separator = ', ';
   private
     FUsesManager: IToolsApiUsesManager;
 
@@ -70,6 +74,8 @@ type
     function GetPosition: Integer;
     procedure SetPosition(const Value: Integer);
     {$ENDREGION}
+
+    function CanWrite: Boolean;
 
     property Text: string read GetText write SetText;
     property Position: Integer read GetPosition write SetPosition;
@@ -153,11 +159,11 @@ begin
   begin
     Result.Text :=  sLineBreak +
                     sLineBreak + 'uses' +
-                    sLineBreak + '  ' + string.Join(',', FUnitNamesToWrite) + ';'
+                    sLineBreak + '  ' + string.Join(UnitNames_Separator, FUnitNamesToWrite) + ';'
   end
   else
   begin
-    Result.Text := ', ' + string.Join(',', FUnitNamesToWrite);
+    Result.Text := UnitNames_Separator + string.Join(UnitNames_Separator, FUnitNamesToWrite);
   end;
 end;
 
@@ -169,6 +175,11 @@ begin
 end;
 
 {$REGION 'TUsesToWriteResult'}
+
+function TUsesToWriteResult.CanWrite: Boolean;
+begin
+  Result := (FPosition >= 0) and (not FText.IsEmpty);
+end;
 
 function TUsesToWriteResult.GetPosition: Integer;
 begin
