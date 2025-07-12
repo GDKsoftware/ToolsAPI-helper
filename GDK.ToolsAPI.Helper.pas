@@ -72,6 +72,7 @@ type
 
     function ProjectConfigurations: IOTAProjectOptionsConfigurations;
     function BuildConfigurations: IToolsApiBuildConfigurations;
+    function Builder: IToolsApiProjectBuilder;
   end;
 
   TToolsApiModule = class(TInterfacedObject, IToolsApiModule)
@@ -175,7 +176,8 @@ uses
   DCCStrs,
   GDK.ToolsAPI.ProjectManagerContextMenu,
   GDK.ToolsAPI.UsesManager,
-  GDK.ToolsAPI.UsesBuilder;
+  GDK.ToolsAPI.UsesBuilder,
+  GDK.ToolsAPI.ProjectBuilder;
 
 { TToolsApiHelper }
 
@@ -328,6 +330,11 @@ end;
 function TToolsApiProject.BuildConfigurations: IToolsApiBuildConfigurations;
 begin
   Result := TToolsApiBuildConfigurations.Create(FProject);
+end;
+
+function TToolsApiProject.Builder: IToolsApiProjectBuilder;
+begin
+  Result := TToolsApiProjectBuilder.Create(FProject);
 end;
 
 procedure TToolsApiProject.Guard;

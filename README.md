@@ -8,6 +8,8 @@ With this library we will contribute to the Delphi community and make it more si
 
 [Project group and projects](#Projects)
 
+[Building projects](#building-projects)
+
 [Uses manager](#uses-manager)
 
 ## Logger
@@ -104,6 +106,47 @@ var SearchPaths: TArray<string> := BaseBuildConfig.SearchPaths;
 // Change the paths
 SearchPaths := SearchPaths + [NewFilePath];
 BaseBuildConfig.SearchPaths := SearchPaths;
+```
+
+#### Building projects
+The **IToolsApiProjectBuilder** interface provides methods to build projects with different configurations and platforms. This functionality supports both modern Delphi versions (XE and later with IOTAProjectBuilder40) and older versions (with IOTAProjectBuilder).
+
+```Pascal
+var Helper: IToolsApiHelper := TToolsApiHelper.Create;
+
+// Build active project with current configuration
+if Helper.Project.Builder.Build then
+  ShowMessage('Build successful')
+else
+  ShowMessage('Build failed');
+
+// Build with specific configuration
+Helper.Project.Builder.BuildWithConfig('Release');
+
+// Build with specific platform (Delphi XE and later)
+Helper.Project.Builder.BuildWithPlatform('Win64');
+
+// Build with both configuration and platform
+Helper.Project.Builder.BuildWithConfigAndPlatform('Release', 'Win64');
+```
+
+The builder will automatically:
+- Save and restore the current configuration and platform settings
+- Provide meaningful error messages if build fails
+- Show warnings when platform selection is not supported in older Delphi versions
+- Support building specific projects, not just the active one
+
+```Pascal
+// Build a specific project
+var ProjectGroup := Helper.ProjectGroup;
+if ProjectGroup.ProjectCount > 0 then
+begin
+  var SpecificProject := ProjectGroup.Projects[0];
+  var ProjectHelper := Helper.Project(SpecificProject);
+  
+  if ProjectHelper.Builder.BuildWithConfig('Debug') then
+    ShowMessage('Project built successfully');
+end;
 ```
 ## Uses manager
 The **TToolsApiUsesManager** class is located in `GDK.ToolsAPI.UsesManager.pas` and provides the following methods:

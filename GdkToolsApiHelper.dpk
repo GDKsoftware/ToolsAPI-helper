@@ -43,6 +43,7 @@ contains
   GDK.ToolsAPI.CustomMessage in 'GDK.ToolsAPI.CustomMessage.pas',
   GDK.ToolsAPI.ProjectManagerContextMenu in 'GDK.ToolsAPI.ProjectManagerContextMenu.pas',
   GDK.ToolsAPI.UsesManager in 'GDK.ToolsAPI.UsesManager.pas',
-  GDK.ToolsAPI.UsesBuilder in 'GDK.ToolsAPI.UsesBuilder.pas';
+  GDK.ToolsAPI.UsesBuilder in 'GDK.ToolsAPI.UsesBuilder.pas',
+  GDK.ToolsAPI.ProjectBuilder in 'GDK.ToolsAPI.ProjectBuilder.pas';
 
 end.

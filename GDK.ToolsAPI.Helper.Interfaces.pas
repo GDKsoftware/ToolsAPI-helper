@@ -20,6 +20,7 @@ type
   IToolsApiBuildConfiguration = interface;
   IToolsApiProjectContextMenu = interface;
   IToolsApiProjectContextMenuItem = interface;
+  IToolsApiProjectBuilder = interface;
 
   EToolsApiNoProjectFound = class(Exception);
   EToolsApiNoModuleFound = class(Exception);
@@ -80,6 +81,7 @@ type
     function ProjectConfigurations: IOTAProjectOptionsConfigurations;
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
+    function Builder: IToolsApiProjectBuilder;
   end;
 
   IToolsApiModule = interface
@@ -168,6 +170,14 @@ type
     property OnPreExecute: TFunc<IOTAProject, Boolean> write SetOnPreExecute;
     property OnExecute: TProc<IOTAProject> write SetOnExecute;
     property OnPostExecute: TFunc<IOTAProject, Boolean> write SetOnPostExecute;
+  end;
+
+  IToolsApiProjectBuilder = interface
+    ['{A3F5E74B-8C92-4F1D-9E3A-2B7D4C6F8A91}']
+    function Build: Boolean;
+    function BuildWithConfig(const ConfigName: string): Boolean;
+    function BuildWithPlatform(const Platform: string): Boolean;
+    function BuildWithConfigAndPlatform(const ConfigName, Platform: string): Boolean;
   end;
 
 implementation
