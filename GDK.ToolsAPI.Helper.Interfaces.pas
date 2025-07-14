@@ -8,6 +8,18 @@ uses
   GDK.ToolsAPI.CustomMessage;
 
 type
+  {$SCOPEDENUMS ON}
+  TBuildMessageType = (Error, Warning, Hint, Info);
+  {$SCOPEDENUMS OFF}
+  
+  TBuildMessage = record
+    MessageText: string;
+    FileName: string;
+    LineNumber: Integer;
+    ColumnNumber: Integer;
+    MessageType: TBuildMessageType;
+  end;
+
   IToolsApiHelper = interface;
   IToolsApiLogger = interface;
   IToolsApiProject = interface;
@@ -174,10 +186,10 @@ type
 
   IToolsApiProjectBuilder = interface
     ['{A3F5E74B-8C92-4F1D-9E3A-2B7D4C6F8A91}']
-    function Build: Boolean;
-    function BuildWithConfig(const ConfigName: string): Boolean;
-    function BuildWithPlatform(const Platform: string): Boolean;
-    function BuildWithConfigAndPlatform(const ConfigName, Platform: string): Boolean;
+    function Build: TArray<TBuildMessage>;
+    function BuildWithConfig(const ConfigName: string): TArray<TBuildMessage>;
+    function BuildWithPlatform(const Platform: string): TArray<TBuildMessage>;
+    function BuildWithConfigAndPlatform(const ConfigName, Platform: string): TArray<TBuildMessage>;
   end;
 
 implementation
