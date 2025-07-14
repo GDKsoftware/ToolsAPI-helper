@@ -3,14 +3,115 @@ This library contains several helpers and classes to make working with the Tools
 It's so much fun to extend the IDE with your own tools and options, but it is sometimes very hard to find out how to do it.
 With this library we will contribute to the Delphi community and make it more simple to build your own IDE extensions.
 
-## Content
-[Logging / Messages](#Logger)
+## Getting Started
 
-[Project group and projects](#Projects)
+### Installation
 
-[Building projects](#building-projects)
+1. **Open the package in Delphi**
+   - Open `GdkToolsApiHelper.dpk` in your Delphi IDE
+   - Right-click on the package in the Project Manager
+   - Select "Install"
+   - You should see a confirmation that the package has been installed
 
-[Uses manager](#uses-manager)
+2. **Create your IDE extension**
+   - Create a new Design-time Package (File → New → Other → Delphi → Package)
+   - Add `GdkToolsApiHelper` to the requires clause
+   - Add your plugin unit to the contains clause
+
+### Quick Example
+
+Here's a minimal IDE extension using the ToolsAPI helper:
+
+```pascal
+package MyFirstPlugin;
+
+{$R *.res}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  designide,
+  GdkToolsApiHelper;  // Add this!
+
+contains
+  MyPlugin in 'MyPlugin.pas';
+
+end.
+```
+
+And in your plugin unit:
+
+```pascal
+unit MyPlugin;
+
+interface
+
+implementation
+
+uses
+  ToolsAPI,
+  GDK.ToolsAPI.Helper.Interfaces,
+  GDK.ToolsAPI.Helper;
+
+procedure BuildActiveProject;
+var
+  Helper: IToolsApiHelper;
+begin
+  Helper := TToolsApiHelper.Create;
+  
+  // Build the active project
+  if Helper.Project.Builder.Build then
+    Helper.Logger.Log('Build successful!')
+  else
+    Helper.Logger.Log('Build failed!');
+end;
+
+// Register a menu item
+procedure Register;
+begin
+  // Your registration code here
+end;
+
+end.
+```
+
+### Why Use GDK ToolsAPI Helper?
+
+- **Simplified API**: No more hunting through complex ToolsAPI interfaces
+- **Type-safe**: Full IntelliSense support with clear interfaces
+- **Less boilerplate**: Helper methods handle common patterns
+- **Well-documented**: Each feature includes examples
+- **Battle-tested**: Used in production IDE extensions
+
+### Common Tasks Made Easy
+
+```pascal
+var
+  Helper: IToolsApiHelper;
+begin
+  Helper := TToolsApiHelper.Create;
+  
+  // Get active project filename
+  ShowMessage(Helper.Project.Get.FileName);
+  
+  // Log to a custom message tab
+  Helper.Logger('MyPlugin').Log('Starting process...');
+  
+  // Build with specific configuration
+  Helper.Project.Builder.BuildWithConfig('Release');
+  
+  // Access build configurations
+  var SearchPaths := Helper.Project.BuildConfigurations.Active.SearchPaths;
+end;
+```
+
+## Features
+
+- [Logging and Messages](#logger) - Write to IDE message window
+- [Project Management](#projects) - Access and manipulate projects
+- [Building Projects](#building-projects) - Compile projects programmatically  
+- [Uses Manager](#uses-manager) - Manage unit dependencies
 
 ## Logger
 ### Simple messages
@@ -48,7 +149,7 @@ CustomMessage.SetFileReference(FilePath, LineNumber);
 CustomMessage.Add('[%s] Error on line %d', [FilePath, LineNumber]);
 ```
 
-## Project group and projects
+## Projects
 
 ### Project Group
 
@@ -108,8 +209,8 @@ SearchPaths := SearchPaths + [NewFilePath];
 BaseBuildConfig.SearchPaths := SearchPaths;
 ```
 
-#### Building projects
-The **IToolsApiProjectBuilder** interface provides methods to build projects with different configurations and platforms. This functionality supports both modern Delphi versions (XE and later with IOTAProjectBuilder40) and older versions (with IOTAProjectBuilder).
+## Building Projects
+The **IToolsApiProjectBuilder** interface provides methods to build projects with different configurations and platforms. This functionality requires IOTAProjectBuilder40 interface (available in modern Delphi versions).
 
 ```Pascal
 var Helper: IToolsApiHelper := TToolsApiHelper.Create;
@@ -148,7 +249,7 @@ begin
     ShowMessage('Project built successfully');
 end;
 ```
-## Uses manager
+## Uses Manager
 The **TToolsApiUsesManager** class is located in `GDK.ToolsAPI.UsesManager.pas` and provides the following methods:
 
 - **`WithSource`**: sets the source code of the unit to be parsed
