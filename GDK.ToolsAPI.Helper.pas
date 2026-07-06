@@ -5,6 +5,7 @@ interface
 uses
   ToolsAPI,
   GDK.ToolsAPI.Helper.Interfaces,
+  GDK.ToolsAPI.Debugger.Interfaces,
   System.SysUtils,
   GDK.ToolsAPI.CustomMessage;
 
