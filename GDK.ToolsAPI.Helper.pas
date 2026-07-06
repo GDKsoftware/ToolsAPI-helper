@@ -75,6 +75,10 @@ type
     function BuildConfigurations: IToolsApiBuildConfigurations;
 
     function Build(const HideProgressDialog: Boolean = False): Boolean;
+
+    function CreateFormUnit(const UnitFileName: string;
+                            const FormName: string;
+                            const AncestorName: string = ''): IOTAModule;
   end;
 
   TToolsApiModule = class(TInterfacedObject, IToolsApiModule)
@@ -94,6 +98,7 @@ type
     function Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
     function SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean> = nil): IToolsApiSourceEditor;
     function FormEditor(const Predicate: TFunc<IOTAFormEditor, Boolean> = nil): IOTAFormEditor;
+    function FormDesigner: IToolsApiFormEditor;
   end;
 
   TToolsApiEditView = class(TInterfacedObject, IToolsApiEditView)
@@ -189,6 +194,8 @@ implementation
 uses
   System.Classes,
   DCCStrs,
+  GDK.ToolsAPI.FormCreator,
+  GDK.ToolsAPI.FormEditor,
   GDK.ToolsAPI.ProjectManagerContextMenu,
   GDK.ToolsAPI.UsesManager,
   GDK.ToolsAPI.UsesBuilder;
@@ -351,6 +358,14 @@ begin
   Result := TToolsApiBuildConfigurations.Create(FProject);
 end;
 
+function TToolsApiProject.CreateFormUnit(const UnitFileName: string;
+                                         const FormName: string;
+                                         const AncestorName: string): IOTAModule;
+begin
+  const Creator: IOTAModuleCreator = TToolsApiFormCreator.Create(FProject, UnitFileName, FormName, AncestorName);
+  Result := (BorlandIDEServices as IOTAModuleServices).CreateModule(Creator);
+end;
+
 function TToolsApiProject.Build(const HideProgressDialog: Boolean): Boolean;
 const
   ShowCompilerProgressOption = 'ShowCompilerProgress';
@@ -474,6 +489,11 @@ begin
                 end);
 
   Result := Found as IOTAFormEditor;
+end;
+
+function TToolsApiModule.FormDesigner: IToolsApiFormEditor;
+begin
+  Result := TToolsApiFormEditor.Create(FormEditor(nil));
 end;
 
 procedure TToolsApiModule.Guard;

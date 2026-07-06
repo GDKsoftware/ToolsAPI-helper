@@ -4,6 +4,7 @@ interface
 
 uses
   ToolsAPI,
+  System.Classes,
   System.SysUtils,
   GDK.ToolsAPI.CustomMessage;
 
@@ -19,6 +20,7 @@ type
   IToolsApiBuildConfigurations = interface;
   IToolsApiBuildConfiguration = interface;
   IToolsApiEnvironmentOptions = interface;
+  IToolsApiFormEditor = interface;
   IToolsApiProjectContextMenu = interface;
   IToolsApiProjectContextMenuItem = interface;
 
@@ -27,6 +29,9 @@ type
   EToolsApiNoEditorFound = class(Exception);
   EToolsApiNoEditViewFound = class(Exception);
   EToolsApiNoCustomLogGroupUsed = class(Exception);
+  EToolsApiComponentNotFound = class(Exception);
+  EToolsApiComponentNotCreated = class(Exception);
+  EToolsApiPropertyNotSupported = class(Exception);
 
   IToolsApiHelper = interface
     ['{3D85AEBD-3FE0-43A0-9C30-F30F0A820C45}']
@@ -84,6 +89,13 @@ type
     function BuildConfigurations: IToolsApiBuildConfigurations;
 
     function Build(const HideProgressDialog: Boolean = False): Boolean;
+
+    // Creates a new form unit through the IDE (default form template), adds it
+    // to the project and opens the designer. AncestorName without the leading
+    // "T" (empty means TForm).
+    function CreateFormUnit(const UnitFileName: string;
+                            const FormName: string;
+                            const AncestorName: string = ''): IOTAModule;
   end;
 
   IToolsApiModule = interface
@@ -97,6 +109,7 @@ type
     function Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
     function SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean> = nil): IToolsApiSourceEditor;
     function FormEditor(const Predicate: TFunc<IOTAFormEditor, Boolean> = nil): IOTAFormEditor;
+    function FormDesigner: IToolsApiFormEditor;
   end;
 
   IToolsApiEditView = interface
@@ -153,6 +166,32 @@ type
     function Get: IOTABuildConfiguration;
 
     property SearchPaths: TArray<string> read GetSearchPaths write SetSearchPaths;
+  end;
+
+  // Component-level access to an open form designer. Native TComponent
+  // references are only valid while the designer stays open; do not hold on
+  // to them.
+  IToolsApiFormEditor = interface
+    ['{2D75892D-2B7F-422B-A8E4-278C92AEC6F0}']
+
+    function Get: IOTAFormEditor;
+
+    function Root: TComponent;
+    function Find(const ComponentName: string): TComponent;
+    function Components: TArray<TComponent>;
+
+    function AddComponent(const TypeName: string;
+                          const ContainerName: string;
+                          const Left: Integer;
+                          const Top: Integer;
+                          const Width: Integer;
+                          const Height: Integer): TComponent;
+    procedure SetComponentProperty(const ComponentName: string;
+                                   const PropertyPath: string;
+                                   const Value: string);
+
+    procedure ShowDesigner;
+    procedure MarkModified;
   end;
 
   IToolsApiEnvironmentOptions = interface
