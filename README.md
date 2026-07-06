@@ -105,6 +105,33 @@ var SearchPaths: TArray<string> := BaseBuildConfig.SearchPaths;
 SearchPaths := SearchPaths + [NewFilePath];
 BaseBuildConfig.SearchPaths := SearchPaths;
 ```
+#### Building a project
+The **Build** function builds the project with the IDE compiler, like *Project > Build*. It returns True when the build succeeded.
+
+By default the IDE shows the compile progress dialog. When a build fails, that dialog stays open as a modal dialog until the user dismisses it, and **Build** only returns after that. For unattended builds (for example builds triggered by an IDE plugin) pass `HideProgressDialog := True`: the "Show compiler progress" option is then disabled during the build and restored afterwards, so a failing build returns immediately. The compiler messages still appear in the message tool window.
+
+```Pascal
+var Helper: IToolsApiHelper := TToolsApiHelper.Create;
+
+// Build the active project without blocking on the progress dialog
+var Succeeded := Helper.Project.Build(True);
+```
+
+#### Environment options
+The IDE environment options (*Tools > Options*) are wrapped in **IToolsApiEnvironmentOptions**. Option names can differ between IDE versions, so **TryFindOptionName** looks up the exact registered name first.
+
+```Pascal
+var Helper: IToolsApiHelper := TToolsApiHelper.Create;
+var EnvironmentOptions := Helper.EnvironmentOptions;
+
+var ExactName: string;
+if EnvironmentOptions.TryFindOptionName('ShowCompilerProgress', ExactName) then
+begin
+  var Value := EnvironmentOptions.GetOption(ExactName);
+  EnvironmentOptions.SetOption(ExactName, False);
+end;
+```
+
 ## Uses manager
 The **TToolsApiUsesManager** class is located in `GDK.ToolsAPI.UsesManager.pas` and provides the following methods:
 

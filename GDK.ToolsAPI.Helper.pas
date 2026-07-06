@@ -24,6 +24,7 @@ type
     function ProjectContextMenu: IToolsApiProjectContextMenu;
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
+    function EnvironmentOptions: IToolsApiEnvironmentOptions;
 
     function ModuleCount: Integer;
     function Module: IToolsApiModule; overload;
@@ -72,6 +73,8 @@ type
 
     function ProjectConfigurations: IOTAProjectOptionsConfigurations;
     function BuildConfigurations: IToolsApiBuildConfigurations;
+
+    function Build(const HideProgressDialog: Boolean = False): Boolean;
   end;
 
   TToolsApiModule = class(TInterfacedObject, IToolsApiModule)
@@ -153,6 +156,19 @@ type
 
     function Base: IToolsApiBuildConfiguration;
     function Active: IToolsApiBuildConfiguration;
+  end;
+
+  TToolsApiEnvironmentOptions = class(TInterfacedObject, IToolsApiEnvironmentOptions)
+  private
+    FOptions: IOTAEnvironmentOptions;
+  public
+    constructor Create;
+
+    function Get: IOTAEnvironmentOptions;
+
+    function TryFindOptionName(const OptionName: string; out ExactName: string): Boolean;
+    function GetOption(const OptionName: string): Variant;
+    procedure SetOption(const OptionName: string; const Value: Variant);
   end;
 
   TToolsApiBuildConfiguration = class(TInterfacedObject, IToolsApiBuildConfiguration)
@@ -250,6 +266,11 @@ begin
   Result := TToolsApiBuildConfigurations.Create(ActiveProject);
 end;
 
+function TToolsApiHelper.EnvironmentOptions: IToolsApiEnvironmentOptions;
+begin
+  Result := TToolsApiEnvironmentOptions.Create;
+end;
+
 function TToolsApiHelper.EditorReader: IToolsApiEditReader;
 begin
   Result := Self.SourceEditor.Reader;
@@ -328,6 +349,33 @@ end;
 function TToolsApiProject.BuildConfigurations: IToolsApiBuildConfigurations;
 begin
   Result := TToolsApiBuildConfigurations.Create(FProject);
+end;
+
+function TToolsApiProject.Build(const HideProgressDialog: Boolean): Boolean;
+const
+  ShowCompilerProgressOption = 'ShowCompilerProgress';
+var
+  EnvironmentOptions: IToolsApiEnvironmentOptions;
+  ExactName: string;
+  SavedValue: Variant;
+begin
+  if not HideProgressDialog then
+    Exit(FProject.ProjectBuilder.BuildProject(cmOTABuild, False, True));
+
+  // When a build fails, the compile progress dialog stays open as a modal dialog until the
+  // user dismisses it, and BuildProject only returns after that. Temporarily disabling the
+  // "Show compiler progress" option keeps unattended builds from blocking.
+  EnvironmentOptions := TToolsApiEnvironmentOptions.Create;
+  if not EnvironmentOptions.TryFindOptionName(ShowCompilerProgressOption, ExactName) then
+    Exit(FProject.ProjectBuilder.BuildProject(cmOTABuild, False, True));
+
+  SavedValue := EnvironmentOptions.GetOption(ExactName);
+  EnvironmentOptions.SetOption(ExactName, False);
+  try
+    Result := FProject.ProjectBuilder.BuildProject(cmOTABuild, False, True);
+  finally
+    EnvironmentOptions.SetOption(ExactName, SavedValue);
+  end;
 end;
 
 procedure TToolsApiProject.Guard;
@@ -580,6 +628,48 @@ begin
   finally
     SearchPaths.Free;
   end;
+end;
+
+{ TToolsApiEnvironmentOptions }
+
+constructor TToolsApiEnvironmentOptions.Create;
+begin
+  inherited Create;
+  FOptions := (BorlandIDEServices as IOTAServices).GetEnvironmentOptions;
+end;
+
+function TToolsApiEnvironmentOptions.Get: IOTAEnvironmentOptions;
+begin
+  Result := FOptions;
+end;
+
+function TToolsApiEnvironmentOptions.TryFindOptionName(const OptionName: string; out ExactName: string): Boolean;
+var
+  Names: TOTAOptionNameArray;
+  Entry: TOTAOptionName;
+begin
+  Result := False;
+  ExactName := '';
+
+  Names := FOptions.GetOptionNames;
+  for Entry in Names do
+  begin
+    if SameText(Entry.Name, OptionName) then
+    begin
+      ExactName := Entry.Name;
+      Exit(True);
+    end;
+  end;
+end;
+
+function TToolsApiEnvironmentOptions.GetOption(const OptionName: string): Variant;
+begin
+  Result := FOptions.Values[OptionName];
+end;
+
+procedure TToolsApiEnvironmentOptions.SetOption(const OptionName: string; const Value: Variant);
+begin
+  FOptions.Values[OptionName] := Value;
 end;
 
 { TToolsApiEditWriter }

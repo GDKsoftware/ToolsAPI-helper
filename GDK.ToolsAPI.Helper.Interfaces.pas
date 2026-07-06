@@ -18,6 +18,7 @@ type
   IToolsApiEditWriter = interface;
   IToolsApiBuildConfigurations = interface;
   IToolsApiBuildConfiguration = interface;
+  IToolsApiEnvironmentOptions = interface;
   IToolsApiProjectContextMenu = interface;
   IToolsApiProjectContextMenuItem = interface;
 
@@ -55,6 +56,7 @@ type
     function  EditorContent: string;
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
+    function EnvironmentOptions: IToolsApiEnvironmentOptions;
 
     function EditView: IToolsApiEditView;
   end;
@@ -80,6 +82,8 @@ type
     function ProjectConfigurations: IOTAProjectOptionsConfigurations;
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
+
+    function Build(const HideProgressDialog: Boolean = False): Boolean;
   end;
 
   IToolsApiModule = interface
@@ -149,6 +153,16 @@ type
     function Get: IOTABuildConfiguration;
 
     property SearchPaths: TArray<string> read GetSearchPaths write SetSearchPaths;
+  end;
+
+  IToolsApiEnvironmentOptions = interface
+    ['{E258D39A-DA61-4D55-B1FF-DBEB3FE156BC}']
+
+    function Get: IOTAEnvironmentOptions;
+
+    function TryFindOptionName(const OptionName: string; out ExactName: string): Boolean;
+    function GetOption(const OptionName: string): Variant;
+    procedure SetOption(const OptionName: string; const Value: Variant);
   end;
 
   IToolsApiProjectContextMenu = interface
