@@ -4,6 +4,7 @@ interface
 
 uses
   System.Classes,
+  System.TypInfo,
   ToolsAPI,
   GDK.ToolsAPI.Helper.Interfaces;
 
@@ -14,6 +15,7 @@ type
 
     function NativeComponent(const Component: IOTAComponent): TComponent;
     procedure SetPropertyValue(const Instance: TObject; const PropertyPath: string; const Value: string);
+    procedure SetEventHandler(const Instance: TObject; const Info: PPropInfo; const MethodName: string);
   public
     constructor Create(const Editor: IOTAFormEditor);
 
@@ -41,8 +43,9 @@ implementation
 
 uses
   System.SysUtils,
-  System.TypInfo,
-  Vcl.Graphics;
+  Vcl.Controls,
+  Vcl.Graphics,
+  DesignIntf;
 
 constructor TToolsApiFormEditor.Create(const Editor: IOTAFormEditor);
 begin
@@ -113,6 +116,23 @@ begin
       'Component of type "%s" could not be created - is the component class installed and registered?', [TypeName]);
 
   Result := NativeComponent(Created);
+
+  // With zero width/height the designer drops the control centered (like a
+  // palette double-click) and ignores the requested position; apply the
+  // position explicitly so placement is deterministic.
+  if Result is TControl then
+  begin
+    const Control = TControl(Result);
+    Control.Left := Left;
+    Control.Top := Top;
+    if Width > 0 then
+      Control.Width := Width;
+    if Height > 0 then
+      Control.Height := Height;
+  end
+  else if Assigned(Result) then
+    Result.DesignInfo := (Top shl 16) or (Left and $FFFF);
+
   MarkModified;
 end;
 
@@ -169,9 +189,38 @@ begin
       SetStrProp(Current, Info, Value);
     tkSet:
       SetSetProp(Current, Info, Value);
+    tkMethod:
+      SetEventHandler(Current, Info, Value);
   else
     raise EToolsApiPropertyNotSupported.CreateFmt('Property "%s" has an unsupported type', [PropertyName]);
   end;
+end;
+
+procedure TToolsApiFormEditor.SetEventHandler(const Instance: TObject;
+                                              const Info: PPropInfo;
+                                              const MethodName: string);
+var
+  NativeEditor: INTAFormEditor;
+begin
+  if MethodName.IsEmpty then
+  begin
+    var Cleared: TMethod;
+    Cleared.Code := nil;
+    Cleared.Data := nil;
+    SetMethodProp(Instance, Info, Cleared);
+    Exit;
+  end;
+
+  const HasDesigner = Supports(FEditor, INTAFormEditor, NativeEditor) and
+    Assigned(NativeEditor.FormDesigner);
+  if not HasDesigner then
+    raise EToolsApiPropertyNotSupported.Create('No form designer available to bind the event handler');
+
+  // CreateMethod resolves an existing handler by name or generates a new empty
+  // handler in the source, like assigning an event in the Object Inspector.
+  const Handler = NativeEditor.FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
+  SetMethodProp(Instance, Info, Handler);
+  NativeEditor.FormDesigner.Modified;
 end;
 
 procedure TToolsApiFormEditor.ShowDesigner;
