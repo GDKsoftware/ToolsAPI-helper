@@ -204,6 +204,9 @@ type
                                    const PropertyPath: string;
                                    const Value: string);
 
+    // Renders the designed form to a PNG (TCustomForm.GetFormImage).
+    function CaptureImage: TBytes;
+
     procedure ShowDesigner;
     procedure MarkModified;
   end;
