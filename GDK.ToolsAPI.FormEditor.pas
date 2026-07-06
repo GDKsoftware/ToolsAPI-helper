@@ -46,7 +46,6 @@ type
 implementation
 
 uses
-  System.SysUtils,
   Vcl.Controls,
   Vcl.Forms,
   Vcl.Graphics,
