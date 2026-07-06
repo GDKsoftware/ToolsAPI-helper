@@ -118,12 +118,18 @@ begin
 
   Result := NativeComponent(Created);
 
-  // With zero width/height the designer drops the control centered (like a
-  // palette double-click) and ignores the requested position; apply the
-  // position explicitly so placement is deterministic.
   if Result is TControl then
   begin
     const Control = TControl(Result);
+
+    // CreateComponent parents a new control to the active page of a
+    // PageControl (or another active container) instead of the requested one;
+    // force the parent so the control lands on exactly the named container.
+    const ContainerControl = NativeComponent(Container);
+    if (ContainerControl is TWinControl) and (Control.Parent <> ContainerControl) then
+      Control.Parent := TWinControl(ContainerControl);
+
+    // Setting Parent resets the position, so apply the bounds afterwards.
     Control.Left := Left;
     Control.Top := Top;
     if Width > 0 then
