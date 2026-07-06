@@ -85,6 +85,7 @@ type
   private
     FModule: IOTAModule;
     procedure Guard;
+    function ReadSourceFromBuffer(out Source: string): Boolean;
   public
     constructor Create; overload;
     constructor Create(const Module: IOTAModule); overload;
@@ -94,6 +95,10 @@ type
     function FileCount: Integer;
     function FileName: string;
     procedure Refresh(const ForceRefresh: Boolean);
+
+    function IsDirty: Boolean;
+    function MatchesDisk: Boolean;
+    procedure SyncWithDisk;
 
     function Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
     function SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean> = nil): IToolsApiSourceEditor;
@@ -193,6 +198,7 @@ implementation
 
 uses
   System.Classes,
+  System.IOUtils,
   DCCStrs,
   GDK.ToolsAPI.FormCreator,
   GDK.ToolsAPI.FormEditor,
@@ -440,6 +446,96 @@ end;
 procedure TToolsApiModule.Refresh(const ForceRefresh: Boolean);
 begin
   FModule.Refresh(ForceRefresh);
+end;
+
+function TToolsApiModule.IsDirty: Boolean;
+begin
+  Result := False;
+
+  for var Index := 0 to FileCount - 1 do
+  begin
+    const ModuleEditor = FModule.GetModuleFileEditor(Index);
+    if Assigned(ModuleEditor) and ModuleEditor.Modified then
+      Exit(True);
+  end;
+end;
+
+function TToolsApiModule.ReadSourceFromBuffer(out Source: string): Boolean;
+const
+  ChunkSize = 4096;
+begin
+  Source := '';
+
+  var Editor: IOTAEditor := nil;
+  for var Index := 0 to FileCount - 1 do
+  begin
+    const Candidate = FModule.GetModuleFileEditor(Index);
+    if Supports(Candidate, IOTASourceEditor) then
+    begin
+      Editor := Candidate;
+      Break;
+    end;
+  end;
+
+  if not Assigned(Editor) then
+    Exit(False);
+
+  const Reader = (Editor as IOTASourceEditor).CreateReader;
+
+  var Bytes: TBytes := nil;
+  var Position := 0;
+  var Chunk: TBytes;
+  SetLength(Chunk, ChunkSize);
+
+  var BytesRead := Reader.GetText(Position, @Chunk[0], ChunkSize);
+  while BytesRead > 0 do
+  begin
+    Bytes := Bytes + Copy(Chunk, 0, BytesRead);
+    Position := Position + BytesRead;
+
+    if BytesRead < ChunkSize then
+      Break;
+
+    BytesRead := Reader.GetText(Position, @Chunk[0], ChunkSize);
+  end;
+
+  Source := TEncoding.UTF8.GetString(Bytes);
+  Result := True;
+end;
+
+function TToolsApiModule.MatchesDisk: Boolean;
+begin
+  const FilePath = FModule.FileName;
+  if (FilePath = '') or (not FileExists(FilePath)) then
+    Exit(True);
+
+  var BufferSource: string;
+  if not ReadSourceFromBuffer(BufferSource) then
+    Exit(True);
+
+  const BufferNormalized = StringReplace(BufferSource, #13#10, #10, [rfReplaceAll]).TrimRight;
+
+  var DiskSource := '';
+  try
+    DiskSource := TFile.ReadAllText(FilePath);
+  except
+    Exit(True);
+  end;
+
+  const DiskNormalized = StringReplace(DiskSource, #13#10, #10, [rfReplaceAll]).TrimRight;
+  Result := (BufferNormalized = DiskNormalized);
+end;
+
+procedure TToolsApiModule.SyncWithDisk;
+begin
+  if MatchesDisk then
+    Exit;
+
+  if IsDirty then
+    raise EToolsApiModuleOutOfSync.CreateFmt(
+      '%s has unsaved changes in the IDE and a different version on disk', [FModule.FileName]);
+
+  FModule.Refresh(True);
 end;
 
 function TToolsApiModule.Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;

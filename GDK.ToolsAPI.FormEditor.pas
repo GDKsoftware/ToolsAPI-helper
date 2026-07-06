@@ -24,6 +24,7 @@ type
     function Root: TComponent;
     function Find(const ComponentName: string): TComponent;
     function Components: TArray<TComponent>;
+    function AssignedEvents(const Component: TComponent): TArray<string>;
 
     function AddComponent(const TypeName: string;
                           const ContainerName: string;
@@ -216,11 +217,58 @@ begin
   if not HasDesigner then
     raise EToolsApiPropertyNotSupported.Create('No form designer available to bind the event handler');
 
-  // CreateMethod resolves an existing handler by name or generates a new empty
-  // handler in the source, like assigning an event in the Object Inspector.
-  const Handler = NativeEditor.FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
-  SetMethodProp(Instance, Info, Handler);
-  NativeEditor.FormDesigner.Modified;
+  // Mirrors DesignEditors.TMethodProperty.SetValue: rename the current handler
+  // when the new name does not exist yet, otherwise bind through CreateMethod
+  // (which resolves an existing handler by name or generates a new empty one).
+  const FormDesigner = NativeEditor.FormDesigner;
+  const CurrentMethod = GetMethodProp(Instance, Info);
+  const CurrentName = FormDesigner.GetMethodName(CurrentMethod);
+
+  const CanRename = (CurrentName <> '') and
+    (SameText(CurrentName, MethodName) or (not FormDesigner.MethodExists(MethodName))) and
+    (not FormDesigner.MethodFromAncestor(CurrentMethod));
+
+  if CanRename then
+    FormDesigner.RenameMethod(CurrentName, MethodName)
+  else
+  begin
+    const Handler = FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
+    SetMethodProp(Instance, Info, Handler);
+  end;
+
+  FormDesigner.Modified;
+end;
+
+function TToolsApiFormEditor.AssignedEvents(const Component: TComponent): TArray<string>;
+var
+  NativeEditor: INTAFormEditor;
+begin
+  Result := nil;
+
+  const HasDesigner = Supports(FEditor, INTAFormEditor, NativeEditor) and
+    Assigned(NativeEditor.FormDesigner);
+  if not HasDesigner then
+    Exit;
+
+  const Count = GetPropList(Component.ClassInfo, [tkMethod], nil);
+  if Count <= 0 then
+    Exit;
+
+  var Props: PPropList;
+  GetMem(Props, Count * SizeOf(PPropInfo));
+  try
+    GetPropList(Component.ClassInfo, [tkMethod], Props);
+
+    for var Index := 0 to Count - 1 do
+    begin
+      const Info = Props^[Index];
+      const HandlerName = NativeEditor.FormDesigner.GetMethodName(GetMethodProp(Component, Info));
+      if HandlerName <> '' then
+        Result := Result + [Format('%s=%s', [string(Info^.Name), HandlerName])];
+    end;
+  finally
+    FreeMem(Props);
+  end;
 end;
 
 procedure TToolsApiFormEditor.ShowDesigner;

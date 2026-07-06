@@ -32,6 +32,7 @@ type
   EToolsApiComponentNotFound = class(Exception);
   EToolsApiComponentNotCreated = class(Exception);
   EToolsApiPropertyNotSupported = class(Exception);
+  EToolsApiModuleOutOfSync = class(Exception);
 
   IToolsApiHelper = interface
     ['{3D85AEBD-3FE0-43A0-9C30-F30F0A820C45}']
@@ -106,6 +107,14 @@ type
     function FileName: string;
     procedure Refresh(const ForceRefresh: Boolean);
 
+    function IsDirty: Boolean;
+    function MatchesDisk: Boolean;
+
+    // Reloads the module from disk when the buffer is unmodified; raises
+    // EToolsApiModuleOutOfSync when the buffer has unsaved changes AND the
+    // file on disk differs (both sides changed).
+    procedure SyncWithDisk;
+
     function Editor(const Predicate: TFunc<IOTAEditor, Boolean>): IOTAEditor;
     function SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean> = nil): IToolsApiSourceEditor;
     function FormEditor(const Predicate: TFunc<IOTAFormEditor, Boolean> = nil): IOTAFormEditor;
@@ -179,6 +188,9 @@ type
     function Root: TComponent;
     function Find(const ComponentName: string): TComponent;
     function Components: TArray<TComponent>;
+
+    // Assigned event handlers as 'OnClick=Button1Click' pairs.
+    function AssignedEvents(const Component: TComponent): TArray<string>;
 
     function AddComponent(const TypeName: string;
                           const ContainerName: string;
