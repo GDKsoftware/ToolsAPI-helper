@@ -17,6 +17,7 @@ type
     function NativeComponent(const Component: IOTAComponent): TComponent;
     procedure SetPropertyValue(const Instance: TObject; const PropertyPath: string; const Value: string);
     procedure SetEventHandler(const Instance: TObject; const Info: PPropInfo; const MethodName: string);
+    procedure SetComponentReference(const Instance: TObject; const Info: PPropInfo; const ComponentName: string);
   public
     constructor Create(const Editor: IOTAFormEditor);
 
@@ -212,9 +213,30 @@ begin
       SetSetProp(Current, Info, Value);
     tkMethod:
       SetEventHandler(Current, Info, Value);
+    tkClass:
+      SetComponentReference(Current, Info, Value);
   else
     raise EToolsApiPropertyNotSupported.CreateFmt('Property "%s" has an unsupported type', [PropertyName]);
   end;
+end;
+
+procedure TToolsApiFormEditor.SetComponentReference(const Instance: TObject;
+                                                    const Info: PPropInfo;
+                                                    const ComponentName: string);
+begin
+  // Component-referentie-properties (ActivePage, DataSource, Images, PopupMenu,
+  // ...) worden gezet met de NAAM van het component; leeg betekent nil.
+  if ComponentName.IsEmpty then
+  begin
+    SetObjectProp(Instance, Info, nil);
+    Exit;
+  end;
+
+  const Referenced = NativeComponent(FEditor.FindComponent(ComponentName));
+  if not Assigned(Referenced) then
+    raise EToolsApiComponentNotFound.CreateFmt('Referenced component "%s" not found on the form', [ComponentName]);
+
+  SetObjectProp(Instance, Info, Referenced);
 end;
 
 procedure TToolsApiFormEditor.SetEventHandler(const Instance: TObject;
