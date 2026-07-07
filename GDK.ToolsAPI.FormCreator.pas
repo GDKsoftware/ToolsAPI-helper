@@ -158,8 +158,8 @@ const
     '  Left = 0'#13#10 +
     '  Top = 0'#13#10 +
     '  Caption = ''%0:s'''#13#10 +
-    '  ClientHeight = 300'#13#10 +
-    '  ClientWidth = 480'#13#10 +
+    '  ClientHeight = 480'#13#10 +
+    '  ClientWidth = 640'#13#10 +
     '  Color = clBtnFace'#13#10 +
     '  Font.Charset = DEFAULT_CHARSET'#13#10 +
     '  Font.Color = clWindowText'#13#10 +
