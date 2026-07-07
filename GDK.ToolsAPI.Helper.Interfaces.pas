@@ -7,8 +7,7 @@ uses
   System.Classes,
   System.SysUtils,
   GDK.ToolsAPI.CustomMessage,
-  GDK.ToolsAPI.Debugger.Interfaces,
-  GDK.ToolsAPI.UiAutomation.Interfaces;
+  GDK.ToolsAPI.Debugger.Interfaces;
 
 type
   IToolsApiHelper = interface;
@@ -66,7 +65,6 @@ type
     function BuildConfigurations: IToolsApiBuildConfigurations;
     function EnvironmentOptions: IToolsApiEnvironmentOptions;
     function Debugger: IToolsApiDebugger;
-    function UiAutomation: IToolsApiUiAutomation;
 
     function EditView: IToolsApiEditView;
   end;

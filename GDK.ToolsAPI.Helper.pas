@@ -6,7 +6,6 @@ uses
   ToolsAPI,
   GDK.ToolsAPI.Helper.Interfaces,
   GDK.ToolsAPI.Debugger.Interfaces,
-  GDK.ToolsAPI.UiAutomation.Interfaces,
   System.SysUtils,
   GDK.ToolsAPI.CustomMessage;
 
@@ -28,7 +27,6 @@ type
     function BuildConfigurations: IToolsApiBuildConfigurations;
     function EnvironmentOptions: IToolsApiEnvironmentOptions;
     function Debugger: IToolsApiDebugger;
-    function UiAutomation: IToolsApiUiAutomation;
 
     function ModuleCount: Integer;
     function Module: IToolsApiModule; overload;
@@ -205,7 +203,6 @@ uses
   System.IOUtils,
   DCCStrs,
   GDK.ToolsAPI.Debugger,
-  GDK.ToolsAPI.UiAutomation,
   GDK.ToolsAPI.FormCreator,
   GDK.ToolsAPI.FormEditor,
   GDK.ToolsAPI.ProjectManagerContextMenu,
@@ -293,11 +290,6 @@ end;
 function TToolsApiHelper.Debugger: IToolsApiDebugger;
 begin
   Result := TToolsApiDebugger.Create;
-end;
-
-function TToolsApiHelper.UiAutomation: IToolsApiUiAutomation;
-begin
-  Result := TToolsApiUiAutomation.Create;
 end;
 
 function TToolsApiHelper.EditorReader: IToolsApiEditReader;
