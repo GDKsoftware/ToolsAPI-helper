@@ -6,17 +6,26 @@ uses
   ToolsAPI;
 
 type
-  // Creates a new form unit through IOTAModuleServices.CreateModule: the IDE
-  // generates the default unit source and .dfm, adds the unit to the owning
-  // project and opens the designer.
+  // A file supplied to the IDE for a newly created module (source verbatim).
+  TToolsApiSourceFile = class(TInterfacedObject, IOTAFile)
+  private
+    FSource: string;
+  public
+    constructor Create(const Source: string);
+    function GetSource: string;
+    function GetAge: TDateTime;
+  end;
+
+  // Creates a new form unit through IOTAModuleServices.CreateModule and adds it
+  // to the owning project. The unit and .dfm source are generated here (not left
+  // to the IDE default template, which mangles the class name), so the form class
+  // is exactly T<FormName>.
   TToolsApiFormCreator = class(TInterfacedObject, IOTACreator, IOTAModuleCreator)
   private
     FOwner: IOTAProject;
     FUnitFileName: string;
     FFormName: string;
     FAncestorName: string;
-  private
-    procedure DiagLog(const Text: string);
   public
     constructor Create(const Owner: IOTAProject;
                        const UnitFileName: string;
@@ -47,17 +56,22 @@ type
 implementation
 
 uses
-  System.SysUtils,
-  System.IOUtils;
+  System.SysUtils;
 
-procedure TToolsApiFormCreator.DiagLog(const Text: string);
+constructor TToolsApiSourceFile.Create(const Source: string);
 begin
-  // Tijdelijke diagnose voor de createForm-naamverminking; verwijderen na fix.
-  try
-    TFile.AppendAllText(TPath.Combine(TPath.GetTempPath, 'claude4d-formcreator.log'),
-      Text + sLineBreak, TEncoding.UTF8);
-  except
-  end;
+  inherited Create;
+  FSource := Source;
+end;
+
+function TToolsApiSourceFile.GetSource: string;
+begin
+  Result := FSource;
+end;
+
+function TToolsApiSourceFile.GetAge: TDateTime;
+begin
+  Result := -1;
 end;
 
 constructor TToolsApiFormCreator.Create(const Owner: IOTAProject;
@@ -70,9 +84,6 @@ begin
   FUnitFileName := UnitFileName;
   FFormName := FormName;
   FAncestorName := AncestorName;
-
-  DiagLog(Format('--- createForm: UnitFileName="%s" FormName="%s" AncestorName="%s"',
-    [UnitFileName, FormName, AncestorName]));
 end;
 
 function TToolsApiFormCreator.GetCreatorType: string;
@@ -108,13 +119,11 @@ begin
     Result := Result.Substring(1);
   if Result.IsEmpty then
     Result := 'Form';
-  DiagLog(Format('GetAncestorName -> "%s"', [Result]));
 end;
 
 function TToolsApiFormCreator.GetImplFileName: string;
 begin
   Result := FUnitFileName;
-  DiagLog(Format('GetImplFileName -> "%s"', [Result]));
 end;
 
 function TToolsApiFormCreator.GetIntfFileName: string;
@@ -125,7 +134,6 @@ end;
 function TToolsApiFormCreator.GetFormName: string;
 begin
   Result := FFormName;
-  DiagLog(Format('GetFormName -> "%s"', [Result]));
 end;
 
 function TToolsApiFormCreator.GetMainForm: Boolean;
@@ -144,22 +152,61 @@ begin
 end;
 
 function TToolsApiFormCreator.NewFormFile(const FormIdent: string; const AncestorIdent: string): IOTAFile;
+const
+  DfmTemplate =
+    'object %0:s: T%0:s'#13#10 +
+    '  Left = 0'#13#10 +
+    '  Top = 0'#13#10 +
+    '  Caption = ''%0:s'''#13#10 +
+    '  ClientHeight = 300'#13#10 +
+    '  ClientWidth = 480'#13#10 +
+    '  Color = clBtnFace'#13#10 +
+    '  Font.Charset = DEFAULT_CHARSET'#13#10 +
+    '  Font.Color = clWindowText'#13#10 +
+    '  Font.Height = -12'#13#10 +
+    '  Font.Name = ''Segoe UI'''#13#10 +
+    '  Font.Style = []'#13#10 +
+    '  TextHeight = 15'#13#10 +
+    'end'#13#10;
 begin
-  DiagLog(Format('NewFormFile: FormIdent="%s" AncestorIdent="%s"', [FormIdent, AncestorIdent]));
-
-  // nil: the IDE generates the default .dfm for the ancestor.
-  Result := nil;
+  // Generate the .dfm ourselves so its class (T<FormIdent>) matches the unit;
+  // the IDE default template mangles the class name.
+  Result := TToolsApiSourceFile.Create(Format(DfmTemplate, [FormIdent]));
 end;
 
 function TToolsApiFormCreator.NewImplSource(const ModuleIdent: string;
                                             const FormIdent: string;
                                             const AncestorIdent: string): IOTAFile;
+const
+  UnitTemplate =
+    'unit %0:s;'#13#10 +
+    ''#13#10 +
+    'interface'#13#10 +
+    ''#13#10 +
+    'uses'#13#10 +
+    '  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,'#13#10 +
+    '  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs;'#13#10 +
+    ''#13#10 +
+    'type'#13#10 +
+    '  T%1:s = class(T%2:s)'#13#10 +
+    '  private'#13#10 +
+    '    { Private declarations }'#13#10 +
+    '  public'#13#10 +
+    '    { Public declarations }'#13#10 +
+    '  end;'#13#10 +
+    ''#13#10 +
+    'var'#13#10 +
+    '  %1:s: T%1:s;'#13#10 +
+    ''#13#10 +
+    'implementation'#13#10 +
+    ''#13#10 +
+    '{$R *.dfm}'#13#10 +
+    ''#13#10 +
+    'end.'#13#10;
 begin
-  DiagLog(Format('NewImplSource: ModuleIdent="%s" FormIdent="%s" AncestorIdent="%s"',
-    [ModuleIdent, FormIdent, AncestorIdent]));
-
-  // nil: the IDE generates the default form unit source.
-  Result := nil;
+  // Generate the unit ourselves with class T<FormIdent> = class(T<AncestorIdent>),
+  // so the class name is exact and matches the .dfm.
+  Result := TToolsApiSourceFile.Create(Format(UnitTemplate, [ModuleIdent, FormIdent, AncestorIdent]));
 end;
 
 function TToolsApiFormCreator.NewIntfSource(const ModuleIdent: string;
