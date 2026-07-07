@@ -6,20 +6,9 @@ uses
   ToolsAPI;
 
 type
-  // A file supplied to the IDE for a newly created module (source verbatim).
-  TToolsApiSourceFile = class(TInterfacedObject, IOTAFile)
-  private
-    FSource: string;
-  public
-    constructor Create(const Source: string);
-    function GetSource: string;
-    function GetAge: TDateTime;
-  end;
-
   // Creates a new form unit through IOTAModuleServices.CreateModule and adds it
-  // to the owning project. The unit and .dfm source are generated here (not left
-  // to the IDE default template, which mangles the class name), so the form class
-  // is exactly T<FormName>.
+  // to the owning project. The unit and .dfm source are generated here so the
+  // form class is exactly T<FormName>.
   TToolsApiFormCreator = class(TInterfacedObject, IOTACreator, IOTAModuleCreator)
   private
     FOwner: IOTAProject;
@@ -56,23 +45,8 @@ type
 implementation
 
 uses
-  System.SysUtils;
-
-constructor TToolsApiSourceFile.Create(const Source: string);
-begin
-  inherited Create;
-  FSource := Source;
-end;
-
-function TToolsApiSourceFile.GetSource: string;
-begin
-  Result := FSource;
-end;
-
-function TToolsApiSourceFile.GetAge: TDateTime;
-begin
-  Result := -1;
-end;
+  System.SysUtils,
+  GDK.ToolsAPI.SourceFile;
 
 constructor TToolsApiFormCreator.Create(const Owner: IOTAProject;
                                         const UnitFileName: string;
@@ -169,8 +143,6 @@ const
     '  TextHeight = 15'#13#10 +
     'end'#13#10;
 begin
-  // Generate the .dfm ourselves so its class (T<FormIdent>) matches the unit;
-  // the IDE default template mangles the class name.
   Result := TToolsApiSourceFile.Create(Format(DfmTemplate, [FormIdent]));
 end;
 
@@ -204,8 +176,6 @@ const
     ''#13#10 +
     'end.'#13#10;
 begin
-  // Generate the unit ourselves with class T<FormIdent> = class(T<AncestorIdent>),
-  // so the class name is exact and matches the .dfm.
   Result := TToolsApiSourceFile.Create(Format(UnitTemplate, [ModuleIdent, FormIdent, AncestorIdent]));
 end;
 

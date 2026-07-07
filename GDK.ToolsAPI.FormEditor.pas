@@ -121,7 +121,7 @@ begin
   // resolving it afterwards can yield a stale/wrong parent (RSP-quirk that
   // lands controls on the active page instead of the requested container).
   const NativeContainer = NativeComponent(Container);
-  const RequestedNamedContainer = not ContainerName.IsEmpty;
+  const RequestedNamedContainer = (not ContainerName.IsEmpty);
   if RequestedNamedContainer and (not (NativeContainer is TWinControl)) then
     raise EToolsApiComponentNotFound.CreateFmt(
       'Container "%s" (%s) cannot host controls; a parent must be a TWinControl (form, panel, tab sheet, group box)',
@@ -224,8 +224,8 @@ procedure TToolsApiFormEditor.SetComponentReference(const Instance: TObject;
                                                     const Info: PPropInfo;
                                                     const ComponentName: string);
 begin
-  // Component-referentie-properties (ActivePage, DataSource, Images, PopupMenu,
-  // ...) worden gezet met de NAAM van het component; leeg betekent nil.
+  // Component-reference properties (ActivePage, DataSource, Images, PopupMenu,
+  // ...) are set by the referenced component NAME; empty means nil.
   if ComponentName.IsEmpty then
   begin
     SetObjectProp(Instance, Info, nil);
@@ -277,15 +277,13 @@ begin
     Exit;
   end;
 
-  const IsNewMethod = not FormDesigner.MethodExists(MethodName);
+  const IsNewMethod = (not FormDesigner.MethodExists(MethodName));
   const Handler = FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
   SetMethodProp(Instance, Info, Handler);
   FormDesigner.Modified;
 
-  // CreateMethod only registers the handler; ShowMethod materialises the empty
-  // method body in the source unit (exactly what the Object Inspector does for a
-  // new event handler). Without it the stub is never written and the binding is
-  // lost on save.
+  // CreateMethod only registers the handler; ShowMethod writes the empty method
+  // body to the source unit, as the Object Inspector does for a new event handler.
   if IsNewMethod then
     FormDesigner.ShowMethod(MethodName);
 end;

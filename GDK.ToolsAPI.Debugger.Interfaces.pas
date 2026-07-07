@@ -9,10 +9,12 @@ type
   EToolsApiNoDebuggerServices = class(Exception);
   EToolsApiEvaluateFailed = class(Exception);
 
+  {$SCOPEDENUMS ON}
   TToolsApiProcessState = (Nothing, Running, Stopping, Stopped, Fault,
-    ResFault, Terminated, Exception_, NoProcess);
+    ResFault, Terminated, Exception, NoProcess);
 
   TToolsApiStepMode = (StepOver, StepInto, RunUntilReturn);
+  {$SCOPEDENUMS OFF}
 
   TToolsApiBreakpointInfo = record
     FileName: string;
@@ -32,13 +34,11 @@ type
   IToolsApiDebugger = interface
     ['{A6A8EF47-CEC7-43BB-8F88-A0A6A12F4E47}']
 
-    // Breakpoints (design-time; blijven bewaard tussen debugsessies).
     procedure AddBreakpoint(const FileName: string; const LineNumber: Integer);
     function RemoveBreakpoint(const FileName: string; const LineNumber: Integer): Boolean;
     function RemoveAllBreakpoints: Integer;
     function ListBreakpoints: TArray<TToolsApiBreakpointInfo>;
 
-    // Procesbeheer (vereist een actief debugproces).
     function State: TToolsApiProcessState;
     function HasProcess: Boolean;
     procedure Continue;
@@ -46,12 +46,11 @@ type
     procedure Pause;
     procedure Terminate;
 
-    // Inspectie (proces moet gestopt zijn).
     function Evaluate(const Expression: string): string;
     function CallStack: TArray<TToolsApiStackFrame>;
-    function CurrentLocation(out FileName: string; out LineNumber: Integer): Boolean;
+    function TryGetCurrentLocation(out FileName: string; out LineNumber: Integer): Boolean;
 
-    // Verwerkt in de wachtlus openstaande debug-events (voor deferred evaluate).
+    // Pumps pending debug events; required while waiting for a deferred evaluate.
     procedure ProcessDebugEvents;
   end;
 

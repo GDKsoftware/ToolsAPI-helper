@@ -12,6 +12,8 @@ type
     const EvaluateBufferSize = 8192;
     const DeferredPollCount = 200;
 
+    type TEvaluateBuffer = array[0..EvaluateBufferSize - 1] of Char;
+
     function DebuggerServices: IOTADebuggerServices;
     function TryDebuggerServices(out Services: IOTADebuggerServices): Boolean;
     function CurrentProcess: IOTAProcess;
@@ -19,6 +21,7 @@ type
     function FindSourceBreakpoint(const FileName: string; const LineNumber: Integer): IOTASourceBreakpoint;
     function MapState(const State: TOTAProcessState): TToolsApiProcessState;
     procedure RunProcess(const Mode: TOTARunMode);
+    function EvaluateOnce(const Thread: IOTAThread; const Expression: string; out Value: string): TOTAEvaluateResult;
   public
     procedure AddBreakpoint(const FileName: string; const LineNumber: Integer);
     function RemoveBreakpoint(const FileName: string; const LineNumber: Integer): Boolean;
@@ -34,7 +37,7 @@ type
 
     function Evaluate(const Expression: string): string;
     function CallStack: TArray<TToolsApiStackFrame>;
-    function CurrentLocation(out FileName: string; out LineNumber: Integer): Boolean;
+    function TryGetCurrentLocation(out FileName: string; out LineNumber: Integer): Boolean;
 
     procedure ProcessDebugEvents;
   end;
@@ -105,10 +108,12 @@ function TToolsApiDebugger.RemoveAllBreakpoints: Integer;
 begin
   const Services = DebuggerServices;
 
-  // Achterwaarts verwijderen: de lijst schuift op bij elke RemoveBreakpoint.
+  // Removing shifts the breakpoint list, so iterate backwards.
   Result := Services.SourceBkptCount;
   for var Index := Services.SourceBkptCount - 1 downto 0 do
+  begin
     Services.RemoveBreakpoint(Services.SourceBkpts[Index]);
+  end;
 end;
 
 function TToolsApiDebugger.ListBreakpoints: TArray<TToolsApiBreakpointInfo>;
@@ -137,16 +142,15 @@ begin
     psFault: Result := TToolsApiProcessState.Fault;
     psResFault: Result := TToolsApiProcessState.ResFault;
     psTerminated: Result := TToolsApiProcessState.Terminated;
-    psException: Result := TToolsApiProcessState.Exception_;
+    psException: Result := TToolsApiProcessState.Exception;
   else
     Result := TToolsApiProcessState.NoProcess;
   end;
 end;
 
 function TToolsApiDebugger.State: TToolsApiProcessState;
-var
-  Services: IOTADebuggerServices;
 begin
+  var Services: IOTADebuggerServices;
   if not TryDebuggerServices(Services) then
     Exit(TToolsApiProcessState.NoProcess);
 
@@ -158,9 +162,8 @@ begin
 end;
 
 function TToolsApiDebugger.HasProcess: Boolean;
-var
-  Services: IOTADebuggerServices;
 begin
+  var Services: IOTADebuggerServices;
   Result := TryDebuggerServices(Services) and Assigned(Services.CurrentProcess);
 end;
 
@@ -203,43 +206,48 @@ begin
 end;
 
 function TToolsApiDebugger.Evaluate(const Expression: string): string;
-var
-  ResultBuffer: array[0..EvaluateBufferSize - 1] of Char;
-  CanModify: Boolean;
-  ResultAddr: LongWord;
-  ResultSize: LongWord;
-  ResultVal: LongWord;
 begin
   const Thread = CurrentThread;
   if not Assigned(Thread) then
     raise EToolsApiEvaluateFailed.Create('No stopped process to evaluate in');
 
-  FillChar(ResultBuffer, SizeOf(ResultBuffer), 0);
+  var Value := '';
+  var EvalResult := EvaluateOnce(Thread, Expression, Value);
 
-  var EvalResult := Thread.Evaluate(Expression, @ResultBuffer[0], EvaluateBufferSize,
-    CanModify, True, nil, ResultAddr, ResultSize, ResultVal);
-
-  // Deferred: het evaluator moest een functie aanroepen in het proces; verwerk
-  // debug-events tot het resultaat binnen is (of de poging opgeeft).
+  // Deferred means the evaluator has to call a function inside the debuggee;
+  // pump debug events until the result arrives or the attempt is abandoned.
   var Polls := 0;
   while (EvalResult = erDeferred) and (Polls < DeferredPollCount) do
   begin
     DebuggerServices.ProcessDebugEvents;
     Inc(Polls);
-
-    FillChar(ResultBuffer, SizeOf(ResultBuffer), 0);
-    EvalResult := Thread.Evaluate(Expression, @ResultBuffer[0], EvaluateBufferSize,
-      CanModify, True, nil, ResultAddr, ResultSize, ResultVal);
+    EvalResult := EvaluateOnce(Thread, Expression, Value);
   end;
 
   case EvalResult of
-    erOK: Result := ResultBuffer;
+    erOK: Result := Value;
     erBusy: raise EToolsApiEvaluateFailed.Create('Evaluator is busy, try again');
     erDeferred: raise EToolsApiEvaluateFailed.Create('Evaluation did not complete in time');
   else
-    // erError: ResultBuffer bevat de foutmelding van de evaluator.
-    raise EToolsApiEvaluateFailed.Create(string(ResultBuffer));
+    // On erError the evaluator message is what came back in the buffer.
+    raise EToolsApiEvaluateFailed.Create(Value);
   end;
+end;
+
+function TToolsApiDebugger.EvaluateOnce(const Thread: IOTAThread; const Expression: string; out Value: string): TOTAEvaluateResult;
+begin
+  var Buffer: TEvaluateBuffer;
+  FillChar(Buffer, SizeOf(Buffer), 0);
+
+  var CanModify := False;
+  var ResultAddr: LongWord := 0;
+  var ResultSize: LongWord := 0;
+  var ResultVal: LongWord := 0;
+
+  Result := Thread.Evaluate(Expression, @Buffer[0], EvaluateBufferSize,
+    CanModify, True, nil, ResultAddr, ResultSize, ResultVal);
+
+  Value := Buffer;
 end;
 
 function TToolsApiDebugger.CallStack: TArray<TToolsApiStackFrame>;
@@ -250,7 +258,7 @@ begin
   if not Assigned(Thread) then
     Exit;
 
-  // GetCallCount moet vóór GetCallHeader/GetCallPos; frames zijn 1-based.
+  // GetCallCount must precede GetCallHeader/GetCallPos; frames are 1-based.
   const Count = Thread.GetCallCount;
   SetLength(Result, Count);
 
@@ -267,7 +275,7 @@ begin
   end;
 end;
 
-function TToolsApiDebugger.CurrentLocation(out FileName: string; out LineNumber: Integer): Boolean;
+function TToolsApiDebugger.TryGetCurrentLocation(out FileName: string; out LineNumber: Integer): Boolean;
 begin
   FileName := '';
   LineNumber := 0;
