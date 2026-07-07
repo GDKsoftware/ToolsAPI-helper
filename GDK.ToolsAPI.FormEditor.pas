@@ -271,14 +271,23 @@ begin
     (not FormDesigner.MethodFromAncestor(CurrentMethod));
 
   if CanRename then
-    FormDesigner.RenameMethod(CurrentName, MethodName)
-  else
   begin
-    const Handler = FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
-    SetMethodProp(Instance, Info, Handler);
+    FormDesigner.RenameMethod(CurrentName, MethodName);
+    FormDesigner.Modified;
+    Exit;
   end;
 
+  const IsNewMethod = not FormDesigner.MethodExists(MethodName);
+  const Handler = FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
+  SetMethodProp(Instance, Info, Handler);
   FormDesigner.Modified;
+
+  // CreateMethod only registers the handler; ShowMethod materialises the empty
+  // method body in the source unit (exactly what the Object Inspector does for a
+  // new event handler). Without it the stub is never written and the binding is
+  // lost on save.
+  if IsNewMethod then
+    FormDesigner.ShowMethod(MethodName);
 end;
 
 function TToolsApiFormEditor.AssignedEvents(const Component: TComponent): TArray<string>;
