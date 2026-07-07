@@ -15,6 +15,8 @@ type
     FUnitFileName: string;
     FFormName: string;
     FAncestorName: string;
+  private
+    procedure DiagLog(const Text: string);
   public
     constructor Create(const Owner: IOTAProject;
                        const UnitFileName: string;
@@ -45,7 +47,18 @@ type
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils,
+  System.IOUtils;
+
+procedure TToolsApiFormCreator.DiagLog(const Text: string);
+begin
+  // Tijdelijke diagnose voor de createForm-naamverminking; verwijderen na fix.
+  try
+    TFile.AppendAllText(TPath.Combine(TPath.GetTempPath, 'claude4d-formcreator.log'),
+      Text + sLineBreak, TEncoding.UTF8);
+  except
+  end;
+end;
 
 constructor TToolsApiFormCreator.Create(const Owner: IOTAProject;
                                         const UnitFileName: string;
@@ -57,6 +70,9 @@ begin
   FUnitFileName := UnitFileName;
   FFormName := FormName;
   FAncestorName := AncestorName;
+
+  DiagLog(Format('--- createForm: UnitFileName="%s" FormName="%s" AncestorName="%s"',
+    [UnitFileName, FormName, AncestorName]));
 end;
 
 function TToolsApiFormCreator.GetCreatorType: string;
@@ -92,11 +108,13 @@ begin
     Result := Result.Substring(1);
   if Result.IsEmpty then
     Result := 'Form';
+  DiagLog(Format('GetAncestorName -> "%s"', [Result]));
 end;
 
 function TToolsApiFormCreator.GetImplFileName: string;
 begin
   Result := FUnitFileName;
+  DiagLog(Format('GetImplFileName -> "%s"', [Result]));
 end;
 
 function TToolsApiFormCreator.GetIntfFileName: string;
@@ -107,6 +125,7 @@ end;
 function TToolsApiFormCreator.GetFormName: string;
 begin
   Result := FFormName;
+  DiagLog(Format('GetFormName -> "%s"', [Result]));
 end;
 
 function TToolsApiFormCreator.GetMainForm: Boolean;
@@ -126,6 +145,8 @@ end;
 
 function TToolsApiFormCreator.NewFormFile(const FormIdent: string; const AncestorIdent: string): IOTAFile;
 begin
+  DiagLog(Format('NewFormFile: FormIdent="%s" AncestorIdent="%s"', [FormIdent, AncestorIdent]));
+
   // nil: the IDE generates the default .dfm for the ancestor.
   Result := nil;
 end;
@@ -134,6 +155,9 @@ function TToolsApiFormCreator.NewImplSource(const ModuleIdent: string;
                                             const FormIdent: string;
                                             const AncestorIdent: string): IOTAFile;
 begin
+  DiagLog(Format('NewImplSource: ModuleIdent="%s" FormIdent="%s" AncestorIdent="%s"',
+    [ModuleIdent, FormIdent, AncestorIdent]));
+
   // nil: the IDE generates the default form unit source.
   Result := nil;
 end;
