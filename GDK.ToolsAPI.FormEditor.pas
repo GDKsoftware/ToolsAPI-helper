@@ -4,6 +4,7 @@ interface
 
 uses
   System.Classes,
+  System.SysUtils,
   System.TypInfo,
   ToolsAPI,
   GDK.ToolsAPI.Helper.Interfaces;
@@ -16,6 +17,7 @@ type
     function NativeComponent(const Component: IOTAComponent): TComponent;
     procedure SetPropertyValue(const Instance: TObject; const PropertyPath: string; const Value: string);
     procedure SetEventHandler(const Instance: TObject; const Info: PPropInfo; const MethodName: string);
+    procedure SetComponentReference(const Instance: TObject; const Info: PPropInfo; const ComponentName: string);
   public
     constructor Create(const Editor: IOTAFormEditor);
 
@@ -36,6 +38,8 @@ type
                                    const PropertyPath: string;
                                    const Value: string);
 
+    function CaptureImage: TBytes;
+
     procedure ShowDesigner;
     procedure MarkModified;
   end;
@@ -43,9 +47,10 @@ type
 implementation
 
 uses
-  System.SysUtils,
   Vcl.Controls,
+  Vcl.Forms,
   Vcl.Graphics,
+  Vcl.Imaging.pngimage,
   DesignIntf;
 
 constructor TToolsApiFormEditor.Create(const Editor: IOTAFormEditor);
@@ -111,6 +116,17 @@ begin
       raise EToolsApiComponentNotFound.CreateFmt('Container "%s" not found', [ContainerName]);
   end;
 
+  // Capture the native container BEFORE creating: the ToolsAPI warns that an
+  // IOTAComponent handle may become invalid after the form is mutated, so
+  // resolving it afterwards can yield a stale/wrong parent (RSP-quirk that
+  // lands controls on the active page instead of the requested container).
+  const NativeContainer = NativeComponent(Container);
+  const RequestedNamedContainer = (not ContainerName.IsEmpty);
+  if RequestedNamedContainer and (not (NativeContainer is TWinControl)) then
+    raise EToolsApiComponentNotFound.CreateFmt(
+      'Container "%s" (%s) cannot host controls; a parent must be a TWinControl (form, panel, tab sheet, group box)',
+      [ContainerName, NativeContainer.ClassName]);
+
   const Created = FEditor.CreateComponent(Container, TypeName, Left, Top, Width, Height);
   if not Assigned(Created) then
     raise EToolsApiComponentNotCreated.CreateFmt(
@@ -122,12 +138,11 @@ begin
   begin
     const Control = TControl(Result);
 
-    // CreateComponent parents a new control to the active page of a
-    // PageControl (or another active container) instead of the requested one;
-    // force the parent so the control lands on exactly the named container.
-    const ContainerControl = NativeComponent(Container);
-    if (ContainerControl is TWinControl) and (Control.Parent <> ContainerControl) then
-      Control.Parent := TWinControl(ContainerControl);
+    // Force the parent to the exact named container (using the reference we
+    // captured before creating), so the control lands on the right tab/page
+    // rather than the currently active one.
+    if (NativeContainer is TWinControl) and (Control.Parent <> NativeContainer) then
+      Control.Parent := TWinControl(NativeContainer);
 
     // Setting Parent resets the position, so apply the bounds afterwards.
     Control.Left := Left;
@@ -198,9 +213,30 @@ begin
       SetSetProp(Current, Info, Value);
     tkMethod:
       SetEventHandler(Current, Info, Value);
+    tkClass:
+      SetComponentReference(Current, Info, Value);
   else
     raise EToolsApiPropertyNotSupported.CreateFmt('Property "%s" has an unsupported type', [PropertyName]);
   end;
+end;
+
+procedure TToolsApiFormEditor.SetComponentReference(const Instance: TObject;
+                                                    const Info: PPropInfo;
+                                                    const ComponentName: string);
+begin
+  // Component-reference properties (ActivePage, DataSource, Images, PopupMenu,
+  // ...) are set by the referenced component NAME; empty means nil.
+  if ComponentName.IsEmpty then
+  begin
+    SetObjectProp(Instance, Info, nil);
+    Exit;
+  end;
+
+  const Referenced = NativeComponent(FEditor.FindComponent(ComponentName));
+  if not Assigned(Referenced) then
+    raise EToolsApiComponentNotFound.CreateFmt('Referenced component "%s" not found on the form', [ComponentName]);
+
+  SetObjectProp(Instance, Info, Referenced);
 end;
 
 procedure TToolsApiFormEditor.SetEventHandler(const Instance: TObject;
@@ -235,14 +271,21 @@ begin
     (not FormDesigner.MethodFromAncestor(CurrentMethod));
 
   if CanRename then
-    FormDesigner.RenameMethod(CurrentName, MethodName)
-  else
   begin
-    const Handler = FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
-    SetMethodProp(Instance, Info, Handler);
+    FormDesigner.RenameMethod(CurrentName, MethodName);
+    FormDesigner.Modified;
+    Exit;
   end;
 
+  const IsNewMethod = (not FormDesigner.MethodExists(MethodName));
+  const Handler = FormDesigner.CreateMethod(MethodName, GetTypeData(Info^.PropType^));
+  SetMethodProp(Instance, Info, Handler);
   FormDesigner.Modified;
+
+  // CreateMethod only registers the handler; ShowMethod writes the empty method
+  // body to the source unit, as the Object Inspector does for a new event handler.
+  if IsNewMethod then
+    FormDesigner.ShowMethod(MethodName);
 end;
 
 function TToolsApiFormEditor.AssignedEvents(const Component: TComponent): TArray<string>;
@@ -274,6 +317,33 @@ begin
     end;
   finally
     FreeMem(Props);
+  end;
+end;
+
+function TToolsApiFormEditor.CaptureImage: TBytes;
+begin
+  const RootComponent = Root;
+  if not (RootComponent is TCustomForm) then
+    raise EToolsApiComponentNotFound.CreateFmt('%s is not a form and cannot be captured', [RootComponent.ClassName]);
+
+  const Bitmap = TCustomForm(RootComponent).GetFormImage;
+  try
+    const Png = TPngImage.Create;
+    try
+      Png.Assign(Bitmap);
+
+      const Stream = TBytesStream.Create;
+      try
+        Png.SaveToStream(Stream);
+        Result := Copy(Stream.Bytes, 0, Stream.Size);
+      finally
+        Stream.Free;
+      end;
+    finally
+      Png.Free;
+    end;
+  finally
+    Bitmap.Free;
   end;
 end;
 

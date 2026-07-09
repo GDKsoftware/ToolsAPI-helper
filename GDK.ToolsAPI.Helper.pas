@@ -5,6 +5,7 @@ interface
 uses
   ToolsAPI,
   GDK.ToolsAPI.Helper.Interfaces,
+  GDK.ToolsAPI.Debugger.Interfaces,
   System.SysUtils,
   GDK.ToolsAPI.CustomMessage;
 
@@ -25,6 +26,7 @@ type
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
     function EnvironmentOptions: IToolsApiEnvironmentOptions;
+    function Debugger: IToolsApiDebugger;
 
     function ModuleCount: Integer;
     function Module: IToolsApiModule; overload;
@@ -200,6 +202,7 @@ uses
   System.Classes,
   System.IOUtils,
   DCCStrs,
+  GDK.ToolsAPI.Debugger,
   GDK.ToolsAPI.FormCreator,
   GDK.ToolsAPI.FormEditor,
   GDK.ToolsAPI.ProjectManagerContextMenu,
@@ -282,6 +285,11 @@ end;
 function TToolsApiHelper.EnvironmentOptions: IToolsApiEnvironmentOptions;
 begin
   Result := TToolsApiEnvironmentOptions.Create;
+end;
+
+function TToolsApiHelper.Debugger: IToolsApiDebugger;
+begin
+  Result := TToolsApiDebugger.Create;
 end;
 
 function TToolsApiHelper.EditorReader: IToolsApiEditReader;
