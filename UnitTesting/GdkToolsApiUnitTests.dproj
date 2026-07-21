@@ -97,6 +97,8 @@
         </DelphiCompile>
         <DCCReference Include="GDK.ToolsAPI.UsesManager.Tests.pas"/>
         <DCCReference Include="..\GDK.ToolsAPI.UsesManager.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.FormNaming.Tests.pas"/>
+        <DCCReference Include="..\GDK.ToolsAPI.FormNaming.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
