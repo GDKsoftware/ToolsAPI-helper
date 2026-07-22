@@ -15,6 +15,7 @@ type
     FEditor: IOTAFormEditor;
 
     function NativeComponent(const Component: IOTAComponent): TComponent;
+    function ResolveComponentClass(const TypeName: string): TComponentClass;
     procedure SetPropertyValue(const Instance: TObject; const PropertyPath: string; const Value: string);
     procedure SetEventHandler(const Instance: TObject; const Info: PPropInfo; const MethodName: string);
     procedure SetComponentReference(const Instance: TObject; const Info: PPropInfo; const ComponentName: string);
@@ -74,6 +75,19 @@ begin
     Result := Native.GetComponent;
 end;
 
+function TToolsApiFormEditor.ResolveComponentClass(const TypeName: string): TComponentClass;
+begin
+  // A registered component class is streamable, so GetClass finds it by name;
+  // failing that, the class is not installed/registered in the IDE.
+  const PersistentClass = GetClass(TypeName);
+  const IsComponent = Assigned(PersistentClass) and PersistentClass.InheritsFrom(TComponent);
+  if not IsComponent then
+    raise EToolsApiComponentNotCreated.CreateFmt(
+      'Component class "%s" is not registered - is the component installed?', [TypeName]);
+
+  Result := TComponentClass(PersistentClass);
+end;
+
 function TToolsApiFormEditor.Root: TComponent;
 begin
   Result := NativeComponent(FEditor.GetRootComponent);
@@ -127,12 +141,32 @@ begin
       'Container "%s" (%s) cannot host controls; a parent must be a TWinControl (form, panel, tab sheet, group box)',
       [ContainerName, NativeContainer.ClassName]);
 
-  const Created = FEditor.CreateComponent(Container, TypeName, Left, Top, Width, Height);
-  if not Assigned(Created) then
+  // Activate the form's framework class group (VCL/FMX) first. The IDE gates
+  // component insertion on the active class group, and a tool that runs while
+  // another view has focus leaves a different group active, so the designer
+  // rejects every class as "not applicable to this module". Activating the group
+  // of the form's own root class is what switching to the design surface does.
+  ActivateClassGroup(TPersistentClass(Root.ClassType));
+
+  const ComponentClass = ResolveComponentClass(TypeName);
+
+  // Create through the form's own IDesigner rather than
+  // IOTAFormEditor.CreateComponent. The latter validates the class against the
+  // IDE's *active* designer; when a caller runs while another view has focus,
+  // that is not this form, so the IDE rejects every class as "not applicable to
+  // this module". The form designer creates directly on its own root.
+  var NativeEditor: INTAFormEditor;
+  if not Supports(FEditor, INTAFormEditor, NativeEditor) then
+    raise EToolsApiComponentNotCreated.Create('The form editor does not expose a native designer');
+
+  const FormDesigner = NativeEditor.FormDesigner;
+  if not Assigned(FormDesigner) then
+    raise EToolsApiComponentNotCreated.Create('The form has no active designer');
+
+  Result := FormDesigner.CreateComponent(ComponentClass, NativeContainer, Left, Top, Width, Height);
+  if not Assigned(Result) then
     raise EToolsApiComponentNotCreated.CreateFmt(
       'Component of type "%s" could not be created - is the component class installed and registered?', [TypeName]);
-
-  Result := NativeComponent(Created);
 
   if Result is TControl then
   begin
