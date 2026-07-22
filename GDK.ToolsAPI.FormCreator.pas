@@ -3,18 +3,21 @@ unit GDK.ToolsAPI.FormCreator;
 interface
 
 uses
-  ToolsAPI;
+  ToolsAPI,
+  GDK.ToolsAPI.FormNaming;
 
 type
   // Creates a new form unit through IOTAModuleServices.CreateModule and adds it
-  // to the owning project. The unit and .dfm source are generated here so the
+  // to the owning project. The unit and .dfm source are generated here from the
+  // derived naming (see TFormUnitNaming) rather than from the identifiers the
+  // IDE passes in, so a dotted/namespaced unit name is handled correctly and the
   // form class is exactly T<FormName>.
   TToolsApiFormCreator = class(TInterfacedObject, IOTACreator, IOTAModuleCreator)
   private
     FOwner: IOTAProject;
     FUnitFileName: string;
-    FFormName: string;
     FAncestorName: string;
+    FNaming: TFormUnitNaming;
   public
     constructor Create(const Owner: IOTAProject;
                        const UnitFileName: string;
@@ -56,8 +59,11 @@ begin
   inherited Create;
   FOwner := Owner;
   FUnitFileName := UnitFileName;
-  FFormName := FormName;
   FAncestorName := AncestorName;
+
+  // Validating up front (dotted unit names, colliding identifiers) turns a bad
+  // request into a clear exception before the IDE creates anything.
+  FNaming := TFormUnitNaming.Derive(UnitFileName, FormName);
 end;
 
 function TToolsApiFormCreator.GetCreatorType: string;
@@ -107,7 +113,8 @@ end;
 
 function TToolsApiFormCreator.GetFormName: string;
 begin
-  Result := FFormName;
+  // The form component name is the plain (dot-free) form variable name.
+  Result := FNaming.FormVariableName;
 end;
 
 function TToolsApiFormCreator.GetMainForm: Boolean;
@@ -128,7 +135,7 @@ end;
 function TToolsApiFormCreator.NewFormFile(const FormIdent: string; const AncestorIdent: string): IOTAFile;
 const
   DfmTemplate =
-    'object %0:s: T%0:s'#13#10 +
+    'object %0:s: %1:s'#13#10 +
     '  Left = 0'#13#10 +
     '  Top = 0'#13#10 +
     '  Caption = ''%0:s'''#13#10 +
@@ -143,7 +150,9 @@ const
     '  TextHeight = 15'#13#10 +
     'end'#13#10;
 begin
-  Result := TToolsApiSourceFile.Create(Format(DfmTemplate, [FormIdent]));
+  // Generated from the derived naming so the .dfm object matches the unit's
+  // form class regardless of the identifiers the IDE passes in.
+  Result := TToolsApiSourceFile.Create(Format(DfmTemplate, [FNaming.FormVariableName, FNaming.FormClassName]));
 end;
 
 function TToolsApiFormCreator.NewImplSource(const ModuleIdent: string;
@@ -160,7 +169,7 @@ const
     '  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs;'#13#10 +
     ''#13#10 +
     'type'#13#10 +
-    '  T%1:s = class(T%2:s)'#13#10 +
+    '  %1:s = class(T%3:s)'#13#10 +
     '  private'#13#10 +
     '    { Private declarations }'#13#10 +
     '  public'#13#10 +
@@ -168,7 +177,7 @@ const
     '  end;'#13#10 +
     ''#13#10 +
     'var'#13#10 +
-    '  %1:s: T%1:s;'#13#10 +
+    '  %2:s: %1:s;'#13#10 +
     ''#13#10 +
     'implementation'#13#10 +
     ''#13#10 +
@@ -176,7 +185,10 @@ const
     ''#13#10 +
     'end.'#13#10;
 begin
-  Result := TToolsApiSourceFile.Create(Format(UnitTemplate, [ModuleIdent, FormIdent, AncestorIdent]));
+  // The unit name comes from the file (dotted names supported) and the form
+  // class/variable from the form name, so they can never collide (E2004).
+  Result := TToolsApiSourceFile.Create(
+    Format(UnitTemplate, [FNaming.UnitName, FNaming.FormClassName, FNaming.FormVariableName, AncestorIdent]));
 end;
 
 function TToolsApiFormCreator.NewIntfSource(const ModuleIdent: string;

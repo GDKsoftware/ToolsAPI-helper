@@ -15,7 +15,9 @@ uses
   DUnitX.TestFramework,
   GDK.ToolsAPI.UsesManager.Tests in 'GDK.ToolsAPI.UsesManager.Tests.pas',
   GDK.ToolsAPI.UsesManager in '..\GDK.ToolsAPI.UsesManager.pas',
-  GDK.ToolsAPI.UsesBuilder in '..\GDK.ToolsAPI.UsesBuilder.pas';
+  GDK.ToolsAPI.UsesBuilder in '..\GDK.ToolsAPI.UsesBuilder.pas',
+  GDK.ToolsAPI.FormNaming.Tests in 'GDK.ToolsAPI.FormNaming.Tests.pas',
+  GDK.ToolsAPI.FormNaming in '..\GDK.ToolsAPI.FormNaming.pas';
 
 {$IFNDEF TESTINSIGHT}
 var
