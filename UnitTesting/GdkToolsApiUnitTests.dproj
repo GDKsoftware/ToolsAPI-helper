@@ -99,6 +99,8 @@
         <DCCReference Include="..\GDK.ToolsAPI.UsesManager.pas"/>
         <DCCReference Include="GDK.ToolsAPI.FormNaming.Tests.pas"/>
         <DCCReference Include="..\GDK.ToolsAPI.FormNaming.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.ProjectMatch.Tests.pas"/>
+        <DCCReference Include="..\GDK.ToolsAPI.ProjectMatch.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

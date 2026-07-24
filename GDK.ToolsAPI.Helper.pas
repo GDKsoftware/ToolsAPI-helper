@@ -22,6 +22,10 @@ type
     function Project: IToolsApiProject; overload;
     function Project(const Project: IOTAProject): IToolsApiProject; overload;
 
+    function FindProject(const NameOrPath: string): IToolsApiProject;
+    procedure SetActiveProject(const Project: IOTAProject);
+    function OpenProject(const FileName: string): IToolsApiProject;
+
     function ProjectContextMenu: IToolsApiProjectContextMenu;
 
     function BuildConfigurations: IToolsApiBuildConfigurations;
@@ -206,6 +210,7 @@ uses
   GDK.ToolsAPI.FormCreator,
   GDK.ToolsAPI.FormEditor,
   GDK.ToolsAPI.ProjectManagerContextMenu,
+  GDK.ToolsAPI.ProjectMatch,
   GDK.ToolsAPI.UsesManager,
   GDK.ToolsAPI.UsesBuilder;
 
@@ -244,6 +249,48 @@ Begin
   end;
 
   Result := ProjectGroup;
+end;
+
+function TToolsApiHelper.FindProject(const NameOrPath: string): IToolsApiProject;
+begin
+  Result := nil;
+
+  const Group = ProjectGroup;
+  if not Assigned(Group) then
+    Exit;
+
+  var FileNames: TArray<string>;
+  SetLength(FileNames, Group.ProjectCount);
+  for var Index := 0 to Group.ProjectCount - 1 do
+    FileNames[Index] := Group.Projects[Index].FileName;
+
+  const MatchIndex = TProjectMatch.IndexOf(FileNames, NameOrPath);
+  if MatchIndex < 0 then
+    Exit;
+
+  Result := Project(Group.Projects[MatchIndex]);
+end;
+
+procedure TToolsApiHelper.SetActiveProject(const Project: IOTAProject);
+begin
+  const Group = ProjectGroup;
+  if Assigned(Group) then
+    Group.ActiveProject := Project;
+end;
+
+function TToolsApiHelper.OpenProject(const FileName: string): IToolsApiProject;
+begin
+  Result := nil;
+
+  if not TFile.Exists(FileName) then
+    Exit;
+
+  const ActionServices = BorlandIDEServices as IOTAActionServices;
+  const Opened = ActionServices.OpenProject(FileName, False);
+  if not Opened then
+    Exit;
+
+  Result := FindProject(FileName);
 end;
 
 function TToolsApiHelper.Module: IToolsApiModule;

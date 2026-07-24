@@ -17,7 +17,9 @@ uses
   GDK.ToolsAPI.UsesManager in '..\GDK.ToolsAPI.UsesManager.pas',
   GDK.ToolsAPI.UsesBuilder in '..\GDK.ToolsAPI.UsesBuilder.pas',
   GDK.ToolsAPI.FormNaming.Tests in 'GDK.ToolsAPI.FormNaming.Tests.pas',
-  GDK.ToolsAPI.FormNaming in '..\GDK.ToolsAPI.FormNaming.pas';
+  GDK.ToolsAPI.FormNaming in '..\GDK.ToolsAPI.FormNaming.pas',
+  GDK.ToolsAPI.ProjectMatch.Tests in 'GDK.ToolsAPI.ProjectMatch.Tests.pas',
+  GDK.ToolsAPI.ProjectMatch in '..\GDK.ToolsAPI.ProjectMatch.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

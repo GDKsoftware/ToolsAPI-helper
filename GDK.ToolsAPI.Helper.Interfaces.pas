@@ -46,6 +46,16 @@ type
     function Project: IToolsApiProject; overload;
     function Project(const Project: IOTAProject): IToolsApiProject; overload;
 
+    // Locates a project in the active project group by name, base name or path
+    // fragment (see GDK.ToolsAPI.ProjectMatch); returns nil when not found or
+    // when a substring query is ambiguous.
+    function FindProject(const NameOrPath: string): IToolsApiProject;
+    // Makes Project the active project of the group (IOTAProjectGroup.ActiveProject).
+    procedure SetActiveProject(const Project: IOTAProject);
+    // Opens a project file (.dproj/.dpr/.groupproj) from disk into the current
+    // project group and returns it; nil when the file is missing or cannot open.
+    function OpenProject(const FileName: string): IToolsApiProject;
+
     function ProjectContextMenu: IToolsApiProjectContextMenu;
 
     function ModuleCount: Integer;
