@@ -1,4 +1,8 @@
 # ToolsAPI-helper
+
+![Delphi](https://img.shields.io/badge/Delphi-10.3%2B-002151)
+![License](https://img.shields.io/badge/license-MIT-65BA13)
+
 This library contains several helpers and classes to make working with the ToolsAPI much easier.
 It's so much fun to extend the IDE with your own tools and options, but it is sometimes very hard to find out how to do it.
 With this library we will contribute to the Delphi community and make it more simple to build your own IDE extensions.
@@ -13,6 +17,21 @@ With this library we will contribute to the Delphi community and make it more si
 [Debugger](#debugger)
 
 [Uses manager](#uses-manager)
+
+## Getting Started
+
+IDE extensions run inside the Delphi IDE, so the library is used from a package (.dpk) project:
+
+1. Clone this repository
+2. Add the repository root to the search path of your package project, or add the units you need directly
+3. Make sure your package requires `DesignIDE`, like the included `GdkToolsApiHelper.dpk`
+4. Create a `TToolsApiHelper` instance and explore the examples below
+
+The included `GdkToolsApiGroupProject.groupproj` contains the library package and the DUnitX unit tests (`UnitTesting` folder).
+
+## Requirements
+
+- Delphi 10.3 Rio or later (the code uses inline variable declarations)
 
 ## Logger
 ### Simple messages
@@ -37,7 +56,7 @@ var Helper: IToolsApiHelper := TToolsApiHelper.Create;
 var Logger := Helper.Logger('MyLogTab');
 ```
 ### Custom messages
-Use the **custom** option to create message with different colors or referencing to a file. In that case double cliking the message will open the file.
+Use the **custom** option to create message with different colors or referencing to a file. In that case double clicking the message will open the file.
 
 ```Pascal
 var CustomMessage := Logger.Custom;
@@ -214,8 +233,14 @@ The **TToolsApiUsesManager** class also defines some private methods for finding
 
 The **IToolsApiUsesManager** interface is used to define the public methods of the **TToolsApiUsesManager** class. The interface includes the same methods as the class.
 
+## License
 
+MIT License, see the [LICENSE](LICENSE) file for details.
 
+## Contributing
 
+Contributions are welcome! Please open an issue or submit a pull request.
 
+## Commercial Support
 
+This library is MIT licensed and free to use. For companies that depend on it commercially we offer support and maintenance agreements with guaranteed response times, and sponsored development of features you need. Contact us at [gdksoftware.com/contact-us](https://gdksoftware.com/contact-us) or open an issue to get in touch.
