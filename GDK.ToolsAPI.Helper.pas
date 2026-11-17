@@ -615,29 +615,32 @@ begin
 end;
 
 function TToolsApiModule.SourceEditor(const Predicate: TFunc<IOTASourceEditor, Boolean>): IToolsApiSourceEditor;
-var
-  Found: IOTAEditor;
-  SourceEditor: IOTASourceEditor;
 begin
-  Found := Editor(
-                function(Editor: IOTAEditor): Boolean
-                begin
-                  Result := Supports(Editor, IOTASourceEditor);
-                end);
+  const Found = Editor(
+                  function(Editor: IOTAEditor): Boolean
+                  begin
+                    var Candidate: IOTASourceEditor;
+                    const IsSourceEditor = Supports(Editor, IOTASourceEditor, Candidate);
 
-  SourceEditor := Found as IOTASourceEditor;
+                    Result := (IsSourceEditor and
+                               ((not Assigned(Predicate)) or Predicate(Candidate)));
+                  end);
+
+  const SourceEditor = Found as IOTASourceEditor;
   Result := TToolsApiSourceEditor.Create(SourceEditor);
 end;
 
 function TToolsApiModule.FormEditor(const Predicate: TFunc<IOTAFormEditor, Boolean>): IOTAFormEditor;
-var
-  Found: IOTAEditor;
 begin
-  Found := Editor(
-                function(Editor: IOTAEditor): Boolean
-                begin
-                  Result := Supports(Editor, IOTAFormEditor);
-                end);
+  const Found = Editor(
+                  function(Editor: IOTAEditor): Boolean
+                  begin
+                    var Candidate: IOTAFormEditor;
+                    const IsFormEditor = Supports(Editor, IOTAFormEditor, Candidate);
+
+                    Result := (IsFormEditor and
+                               ((not Assigned(Predicate)) or Predicate(Candidate)));
+                  end);
 
   Result := Found as IOTAFormEditor;
 end;

@@ -125,6 +125,13 @@
         <DCCReference Include="GDK.ToolsAPI.ProjectManagerContextMenu.pas"/>
         <DCCReference Include="GDK.ToolsAPI.UsesManager.pas"/>
         <DCCReference Include="GDK.ToolsAPI.UsesBuilder.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.Debugger.Interfaces.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.Debugger.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.FormCreator.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.FormEditor.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.FormNaming.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.ProjectMatch.pas"/>
+        <DCCReference Include="GDK.ToolsAPI.SourceFile.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

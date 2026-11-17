@@ -43,6 +43,13 @@ contains
   GDK.ToolsAPI.CustomMessage in 'GDK.ToolsAPI.CustomMessage.pas',
   GDK.ToolsAPI.ProjectManagerContextMenu in 'GDK.ToolsAPI.ProjectManagerContextMenu.pas',
   GDK.ToolsAPI.UsesManager in 'GDK.ToolsAPI.UsesManager.pas',
-  GDK.ToolsAPI.UsesBuilder in 'GDK.ToolsAPI.UsesBuilder.pas';
+  GDK.ToolsAPI.UsesBuilder in 'GDK.ToolsAPI.UsesBuilder.pas',
+  GDK.ToolsAPI.Debugger.Interfaces in 'GDK.ToolsAPI.Debugger.Interfaces.pas',
+  GDK.ToolsAPI.Debugger in 'GDK.ToolsAPI.Debugger.pas',
+  GDK.ToolsAPI.FormCreator in 'GDK.ToolsAPI.FormCreator.pas',
+  GDK.ToolsAPI.FormEditor in 'GDK.ToolsAPI.FormEditor.pas',
+  GDK.ToolsAPI.FormNaming in 'GDK.ToolsAPI.FormNaming.pas',
+  GDK.ToolsAPI.ProjectMatch in 'GDK.ToolsAPI.ProjectMatch.pas',
+  GDK.ToolsAPI.SourceFile in 'GDK.ToolsAPI.SourceFile.pas';
 
 end.
