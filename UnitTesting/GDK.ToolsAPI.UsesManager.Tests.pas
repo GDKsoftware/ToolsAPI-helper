@@ -11,7 +11,6 @@ type
   TGdkToolsApiUsesManagerTests = class
   const
     MY_TEST_UNIT = 'My.Test.Unit';
-    LineFeed = #10;
   private
     function GetEmptyUnit: string;
     function GetEmptyUnitWithTestUnitUses(const InImplementation: Boolean): string;
@@ -57,7 +56,8 @@ implementation
 
 uses
   GDK.ToolsAPI.UsesManager,
-  System.SysUtils;
+  System.SysUtils,
+  System.Types;
 
 { TGdkToolsApiUsesManagerTests }
 

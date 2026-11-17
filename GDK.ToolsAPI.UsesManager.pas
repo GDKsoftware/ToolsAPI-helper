@@ -31,7 +31,6 @@ type
     REGEX_IMPLEMENTATION = '\bimplementation\b[\h\s\w[.,]';
     REGEX_USES_SECTION = '\buses\b[\h\s\w[.,]*;';
     MatchIndexBase = 1;
-    LineFeed: string = #10;
   private
     FSource: string;
 
@@ -61,6 +60,9 @@ type
   end;
 
 implementation
+
+uses
+  System.Types;
 
 { TToolsApiUsesManager }
 
@@ -134,7 +136,7 @@ begin
 
   const HasLineFeed = (LineFeedOffset >= 0);
   if HasLineFeed then
-    Result := LineFeedOffset + LineFeed.Length
+    Result := LineFeedOffset + Length(LineFeed)
   else
     Result := EndOfKeyword;
 end;
