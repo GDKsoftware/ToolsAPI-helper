@@ -30,12 +30,15 @@ type
     REGEX_INTERFACE = '\binterface\b[\h\s\w[.,]';
     REGEX_IMPLEMENTATION = '\bimplementation\b[\h\s\w[.,]';
     REGEX_USES_SECTION = '\buses\b[\h\s\w[.,]*;';
+    MatchIndexBase = 1;
+    LineFeed: string = #10;
   private
     FSource: string;
 
     function GetPositionForInterface: Integer;
     function GetPositionForImplementation: Integer;
     function GetEndOfSectionKeyword(const ForImplementation: Boolean): Integer;
+    function GetPositionAfterSectionKeywordLine(const ForImplementation: Boolean): Integer;
 
     function DoFindWord(const Source: string; const Word: string): TMatch;
     function FindPositionToAdd(const UnitName: string; const UsesMatch: TMatch): Integer; overload;
@@ -120,6 +123,20 @@ begin
     Result := GetPositionForImplementation + 'implementation'.Length
   else
     Result := GetPositionForInterface + 'interface'.Length;
+
+  Result := Result - MatchIndexBase;
+end;
+
+function TToolsApiUsesManager.GetPositionAfterSectionKeywordLine(const ForImplementation: Boolean): Integer;
+begin
+  const EndOfKeyword = GetEndOfSectionKeyword(ForImplementation);
+  const LineFeedOffset = FSource.IndexOf(LineFeed, EndOfKeyword);
+
+  const HasLineFeed = (LineFeedOffset >= 0);
+  if HasLineFeed then
+    Result := LineFeedOffset + LineFeed.Length
+  else
+    Result := EndOfKeyword;
 end;
 
 procedure TToolsApiUsesManager.FindPositionToAdd(const UnitName: string; const InImplementation: Boolean; const OnPositionFound: TOnPositionFoundProc);
@@ -154,7 +171,7 @@ begin
 
   if not HasUsesSection then
   begin
-    Position := GetEndOfSectionKeyword(InImplementation);
+    Position := GetPositionAfterSectionKeywordLine(InImplementation);
   end
   else
   begin

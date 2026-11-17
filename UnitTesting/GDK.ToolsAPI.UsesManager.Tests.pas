@@ -11,8 +11,10 @@ type
   TGdkToolsApiUsesManagerTests = class
   const
     MY_TEST_UNIT = 'My.Test.Unit';
+    LineFeed = #10;
   private
     function GetEmptyUnit: string;
+    function GetEmptyUnitWithTestUnitUses(const InImplementation: Boolean): string;
     function GetUnitWithInterfaceUses: string;
     function GetUnitWithImplementationUses: string;
     function GetUnitWithBothUses: string;
@@ -20,17 +22,17 @@ type
     procedure AssertUsesFound(const Source: string; const AddToImplementation: Boolean; const ExpectedPosition: Integer; const ExpectEmptyUses: Boolean);
   public
     [Test]
-    [TestCase('Add to interface', 'False,27,True')]
-    [TestCase('Add to implementation', 'True,45,True')]
+    [TestCase('Add to interface', 'False,28,True')]
+    [TestCase('Add to implementation', 'True,46,True')]
     procedure AddUnitToNonExistingUsesSection(const AddToImplementation: Boolean; const ExpectedPosition: Integer; const ExpectEmptyUses: Boolean);
 
     [Test]
     [TestCase('Add to interface', 'False,71,False')]
-    [TestCase('Add to implementation', 'True,91,True')]
+    [TestCase('Add to implementation', 'True,92,True')]
     procedure AddUnitToExistingInterfaceUses(const AddToImplementation: Boolean; const ExpectedPosition: Integer; const ExpectEmptyUses: Boolean);
 
     [Test]
-    [TestCase('Add to interface', 'False,27,True')]
+    [TestCase('Add to interface', 'False,28,True')]
     [TestCase('Add to implementation', 'True,108,False')]
     procedure AddUnitToExistingImplementationUses(const AddToImplementation: Boolean; const ExpectedPosition: Integer; const ExpectEmptyUses: Boolean);
 
@@ -41,6 +43,14 @@ type
 
     [Test]
     procedure TestUsesBuilder;
+
+    [Test]
+    [TestCase('Add to interface', 'False')]
+    [TestCase('Add to implementation', 'True')]
+    procedure Build_SectionWithoutUses_InsertsUsesAfterLineBreak(const InImplementation: Boolean);
+
+    [Test]
+    procedure Build_LineFeedSourceWithoutUses_PositionFollowsLineFeed;
   end;
 
 implementation
@@ -108,10 +118,10 @@ const
 begin
   var UsesBuilder: IToolsAPIUsesBuilder := TToolsAPIUsesBuilder.Use;
   UsesBuilder.InImplementation;
-  var ExpectedPosition := 45;
-  var ExpectedText :=  sLineBreak +
-                       sLineBreak + 'uses' +
-                       sLineBreak + '  ' + MY_TEST_UNIT + ';';
+  var ExpectedPosition := 46;
+  var ExpectedText :=  sLineBreak + 'uses' +
+                       sLineBreak + '  ' + MY_TEST_UNIT + ';' +
+                       sLineBreak;
 
   var EmptySource := GetEmptyUnit;
   UsesBuilder.WithSource(EmptySource);
@@ -123,9 +133,9 @@ begin
   Assert.AreEqual(ExpectedText, Actual.Text, '1 - Text is not correct');
 
   UnitNames := [MY_TEST_UNIT, 'System.SysUtils'];
-  ExpectedText := sLineBreak +
-                  sLineBreak + 'uses' +
-                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';';
+  ExpectedText := sLineBreak + 'uses' +
+                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';' +
+                  sLineBreak;
 
   Actual := UsesBuilder.Build(UnitNames);
 
@@ -135,21 +145,21 @@ begin
   var SourceWithInterfaceUses := GetUnitWithInterfaceUses;
   UsesBuilder.WithSource(SourceWithInterfaceUses);
 
-  ExpectedPosition := 91;
+  ExpectedPosition := 92;
 
   UnitNames := [MY_TEST_UNIT];
-  ExpectedText := sLineBreak +
-                  sLineBreak + 'uses' +
-                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';';
+  ExpectedText := sLineBreak + 'uses' +
+                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';' +
+                  sLineBreak;
   Actual := UsesBuilder.Build(UnitNames);
 
   Assert.AreEqual(ExpectedPosition, Actual.Position, '3 - Position is not correct');
   Assert.AreEqual(ExpectedText, Actual.Text, '3 - Text is not correct');
 
   UnitNames := [MY_TEST_UNIT];
-  ExpectedText := sLineBreak +
-                  sLineBreak + 'uses' +
-                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';';
+  ExpectedText := sLineBreak + 'uses' +
+                  sLineBreak + '  ' + string.Join(Uses_Separator, UnitNames) + ';' +
+                  sLineBreak;
 
   // System.SysUtils already used in interface uses
   Actual := UsesBuilder.Build(UnitNames + ['System.SysUtils']);
@@ -177,6 +187,66 @@ begin
 
   Assert.AreEqual(ExpectedPosition, Actual.Position, '6 - Position is not correct');
   Assert.AreEqual(ExpectedText, Actual.Text, '6 - Text is not correct');
+end;
+
+procedure TGdkToolsApiUsesManagerTests.Build_SectionWithoutUses_InsertsUsesAfterLineBreak(const InImplementation: Boolean);
+begin
+  const Source = GetEmptyUnit;
+  const Expected = GetEmptyUnitWithTestUnitUses(InImplementation);
+  const UsesBuilder = TToolsAPIUsesBuilder.Use;
+  if InImplementation then
+    UsesBuilder.InImplementation
+  else
+    UsesBuilder.InInterface;
+  UsesBuilder.WithSource(Source);
+
+  const UsesToWrite = UsesBuilder.Build([MY_TEST_UNIT]);
+  const Actual = Source.Insert(UsesToWrite.Position, UsesToWrite.Text);
+
+  Assert.AreEqual(Expected, Actual);
+end;
+
+procedure TGdkToolsApiUsesManagerTests.Build_LineFeedSourceWithoutUses_PositionFollowsLineFeed;
+begin
+  const CrLfSource = GetEmptyUnit;
+  const Source = CrLfSource.Replace(sLineBreak, LineFeed);
+  const TextUpToInterfaceLine = string.Join(LineFeed, ['unit TestUnit', '', 'interface', '']);
+  const Expected = TextUpToInterfaceLine.Length;
+  const UsesBuilder = TToolsAPIUsesBuilder.Use;
+  UsesBuilder.InInterface;
+  UsesBuilder.WithSource(Source);
+
+  const UsesToWrite = UsesBuilder.Build([MY_TEST_UNIT]);
+
+  Assert.AreEqual(Expected, UsesToWrite.Position);
+end;
+
+function TGdkToolsApiUsesManagerTests.GetEmptyUnitWithTestUnitUses(const InImplementation: Boolean): string;
+begin
+  const UsesClause: TArray<string> = [
+    'uses',
+    '  ' + MY_TEST_UNIT + ';',
+    ''
+  ];
+
+  var UnitSource: TArray<string> := [
+    'unit TestUnit',
+    '',
+    'interface',
+    ''
+  ];
+
+  if not InImplementation then
+    UnitSource := UnitSource + UsesClause;
+
+  UnitSource := UnitSource + ['implementation', ''];
+
+  if InImplementation then
+    UnitSource := UnitSource + UsesClause;
+
+  UnitSource := UnitSource + ['end.'];
+
+  Result := string.Join(sLineBreak, UnitSource);
 end;
 
 function TGdkToolsApiUsesManagerTests.GetEmptyUnit: string;

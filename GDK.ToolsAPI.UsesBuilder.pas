@@ -157,9 +157,9 @@ begin
 
   if FIsEmptyUses then
   begin
-    Result.Text :=  sLineBreak +
-                    sLineBreak + 'uses' +
-                    sLineBreak + '  ' + string.Join(UnitNames_Separator, FUnitNamesToWrite) + ';'
+    const UnitNamesText = string.Join(UnitNames_Separator, FUnitNamesToWrite);
+    const UsesLines: TArray<string> = ['', 'uses', Format('  %s;', [UnitNamesText]), ''];
+    Result.Text := string.Join(sLineBreak, UsesLines);
   end
   else
   begin
